@@ -92,7 +92,8 @@
   var RE_O2_ON = /((?:עם|על|תחת|לאחר|אחרי|במתן)\s+חמצן|בחמצן|על O2|עם O2|O2)/i;
   var RE_GLU = new RegExp(NOT_BEFORE + PFX + '(?:סוכר(?:\\s+בדם)?|רמת\\s+סוכר|גלוקוז(?:ה)?|דקסטרו|BGL|גלוקומטר)\\s*:?\\s*(\\d{2,3}|HI|LO|HIGH|LOW)(?![\\d' + HB + 'A-Za-z])', 'gi');
   var RE_GLU_GEL_BEFORE = /(ג['"\u05F3\u05F4]?ל|ג'ל|ג׳ל)\s*$/;
-  var RE_GLU_UNIT_AFTER = /^\s*(גרם|גר'|ג'|ג׳|מ"ג|מ״ג|מג)/;
+  var RE_GLU_UNIT_AFTER = /^\s*(גרם|גר'|ג'|ג׳)(?![א-ת])/; // grams = sugar given, not a reading
+  var RE_TEMP = new RegExp(NOT_BEFORE + PFX + '(?:חום(?:\\s+גוף)?|טמפרטורה|טמפ' + Q + ')\\s*:?\\s*(\\d{2}(?:[.,]\\d)?)(?!\\d)\\s*(?:מעלות)?', 'gi');
   var RE_FAST = /(BE[-\s]?FAST|FAST|פאסט|בי\s*פאסט)\s*[:\-]?\s*(.*)$/i;
 
   var DRUGS = ['אספירין', 'אספירן', 'אדרנלין', 'אפינפרין', 'אפיפן', 'אפי פן', 'EpiPen', 'נלוקסון', 'נרקן', 'נרקאן', 'Naloxone',
@@ -116,10 +117,12 @@
   var RE_SHOCK = /(?:^|[^א-ת])(?:ו)?(?:שוק|שוקים)(?![א-ת])/;
   var RE_NEG_TX = /(?:^|[^א-ת])(?:לא|ללא|בלי)\s+(?:ניתן|ניתנה|ניתנו|נדרש|נדרשה|בוצע|בוצעה|בוצעו|הותאם|הומלץ)(?![א-ת])/;
 
+  // Chief complaint = the reason we were called. An explicit "תלונה עיקרית:" wins, then the reason for the call,
+  // then the patient's own complaint. Everything else stays in the anamnesis.
   var RE_COMPLAINT = [
-    /תלונה(?:\s+עיקרית)?\s*[:\-]\s*(.+)$/,
-    /מתלונ(?:ן|נת|נים|נות)\s+(?:על\s+)?(.+)$/,
-    /(?:הזעיק|הזעיקה|הזעיקו|הוזעקנו|הוזעקתי|הזמינו|התקשר|התקשרה|פנה|פנתה|פנו)\s+(?:בשל|עקב|בגלל|בעקבות|על|ל)\s*(.+)$/
+    /(?:תלונה(?:\s+עיקרית)?|סיבת\s+(?:ה)?(?:קריאה|הזנקה|פנייה))\s*[:\-]\s*(.+)$/,
+    /(?:הזעיק|הזעיקה|הזעיקו|הוזעקנו|הוזעקתי|הוזנקנו|הוזנקתי|הוקפצנו|הוקפצתי|נקראנו|נקראתי|הוזמנו|הזמינו|התקשר|התקשרה|התקשרו|פנה|פנתה|פנו|קריאה|קריאת|הזנקה)\s+(?:בשל|עקב|בגלל|בעקבות|על|ל|אל)\s*(.+)$/,
+    /מתלונ(?:ן|נת|נים|נות)\s+(?:על\s+)?(.+)$/
   ];
 
   var BUCKETS = [
@@ -152,6 +155,24 @@
     return ws.length;
   }
   var RE_VITAL_CTX = /(לא\s*סדיר|אי[\s-]?סדיר|סדיר|באוויר|באויר|אוויר החדר|(?:עם|על|תחת)\s+חמצן|בחמצן|מאומצ[א-ת]*|תקינ[א-ת]*|תקין|שטחי[א-ת]*|רדוד[א-ת]*|מ["\u05F4]?ג\/ד[״"]?ל)/g;
+  // After a measurement, also take the words that qualify it (%, "סדיר", "באוויר", "עם חמצן", units).
+  var RE_CTX_HEAD = /^\s*(?:%|לא\s*סדיר|לא-סדיר|אי[\s-]?סדיר|סדיר|באוויר|באויר|באוויר החדר|(?:עם|על|תחת|לאחר|אחרי)\s+חמצן|בחמצן|מאומצ[א-ת]*|תקינ[א-ת]*|תקין|שטחי[א-ת]*|רדוד[א-ת]*|רועש[א-ת]*|מ["\u05F4]?ג(?:\s*\/\s*ד["\u05F4]?ל)?|mg\/dl|מעלות|לדקה|בדקה|ממ["\u05F4]?כ|בבדיקה|במדידה|בגלוקומטר)(?![א-ת])/;
+  function eatContext(s, end) {
+    var m;
+    while ((m = s.slice(end).match(RE_CTX_HEAD))) end += m[0].length;
+    return end;
+  }
+  function withoutSpans(sen, spans) {
+    if (!spans.length) return sen;
+    var keep = sen.split('');
+    spans.forEach(function (sp) { for (var i = sp[0]; i < sp[1]; i++) keep[i] = '\u0000'; });
+    var out = keep.join('').replace(/\u0000+/g, '\u0000')
+      .replace(/\s*[,;]?\s*\u0000\s*/g, ', ')                    // a removed measurement leaves one comma
+      .replace(/(,\s*)+/g, ', ').replace(/\s+([,.;:!?])/g, '$1')
+      .replace(/^[\s,;:\-–.]+/, '').replace(/[\s,;:\-–]+$/, '').replace(/,\s*\./g, '.')
+      .replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+    return /[א-תA-Za-z]{2}/.test(out) ? out : '';
+  }
   function eachMatch(re, s, fn) { re.lastIndex = 0; var m; while ((m = re.exec(s))) { fn(m); if (!re.global) break; } }
   // Context of a measurement stays inside its clause: stop at a comma, and after it also at the next number.
   function windowAfter(s, from, len) {
@@ -192,9 +213,12 @@
     notes.forEach(function (note) {
       var noteTime = null; // an explicit time carries on to the following sentences of the same note
       splitSentences(note.text).forEach(function (sen) {
-        var spans = [], at = timeIn(sen, note.t), src = note.id;
+        var spans = [], vspans = [], at = timeIn(sen, note.t), src = note.id;
         if (at.explicit) noteTime = at; else if (noteTime) at = noteTime;
-        function v(field, value, m) { vitals.push({ field: field, value: value, t: at.t, explicit: at.explicit, src: src }); if (m) addSpan(spans, m.index, m.index + m[0].length); }
+        function v(field, value, m) {
+          vitals.push({ field: field, value: value, t: at.t, explicit: at.explicit, src: src });
+          if (m) { var end = eatContext(sen, m.index + m[0].length); addSpan(spans, m.index, end); addSpan(vspans, m.index, end); }
+        }
         function c(field, value, m, extra) { cand[field].push({ value: value, src: src, t: note.t, extra: extra }); if (m) addSpan(spans, m.index, m.index + m[0].length); }
 
         /* demographics */
@@ -254,15 +278,16 @@
           if (RE_GLU_UNIT_AFTER.test(sen.slice(m.index + m[0].length))) return;
           v('glucose', m[1].toUpperCase() === m[1] ? m[1] : m[1], m);
         });
+        eachMatch(RE_TEMP, sen, function (m) { var n = parseFloat(m[1].replace(',', '.')); if (n >= 30 && n <= 44) v('temp', m[1].replace(',', '.'), m); });
         var fm = sen.match(RE_FAST);
         if (fm) {
           var val = fm[2].replace(/^[\s:\-–]+/, '').replace(/[.;]\s*$/, '').trim();
           vitals.push({ field: 'fast', value: val || 'בוצע', t: at.t, explicit: at.explicit, src: src });
-          addSpan(spans, fm.index, sen.length);
+          addSpan(spans, fm.index, sen.length); addSpan(vspans, fm.index, sen.length);
         }
 
         /* chief complaint */
-        var isComplaint = !!(best && best.idx < 2 && best.sen === sen && best.src === src);
+        var isComplaint = !!(best && best.sen === sen && best.src === src);
 
         /* treatments */
         var negated = RE_NEG_TX.test(sen);
@@ -275,7 +300,9 @@
         }
 
         /* narrative */
-        var item = { text: sen, src: src };
+        var clean = withoutSpans(sen, vspans); // measurements live in "בדיקות שבוצעו", not in the narrative
+        var item = { text: clean, src: src };
+        if (!clean) return;
         if (BUCKETS[0][1].test(sen)) { hist.followup.push(item); return; }
         if (isTx || isComplaint) return;
         if (residualWords(sen, spans) < 1) return; // only demographics / measurements
@@ -333,11 +360,14 @@
     if (complaint) sources.complaint = complaint.src;
 
     var caseSuggestions = suggestCases(notes, opts.cases || []);
+    // One case when it clearly fits best; otherwise leave it open and offer the candidates.
+    var clear = caseSuggestions.length === 1 || (caseSuggestions.length > 1 && caseSuggestions[0].score >= 2 * caseSuggestions[1].score);
 
     return {
       generatedAt: Date.now(),
       demo: demo,
-      caseId: '',
+      caseId: clear ? caseSuggestions[0].id : '',
+      caseAuto: !!clear,
       caseText: '',
       caseSuggestions: caseSuggestions,
       complaint: complaint ? complaint.value : '',
@@ -357,20 +387,27 @@
     return String(s || '').normalize('NFKD').replace(/[\u0591-\u05BD\u05BF-\u05C7]/g, '').replace(/["'`\u05F3\u05F4\u201C\u201D]/g, '')
       .replace(/[ךםןףץ]/g, function (c) { return FINALS[c]; }).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
   }
+  // Generic words in case titles that say nothing about the case on their own.
+  var TITLE_STOP = {};
+  ['חשד', 'בעיות', 'אחרות', 'לאחר', 'פגיעת', 'חבלת', 'חבלה', 'ביטול', 'מינונ', 'מינון', 'יתר', 'ידי', 'מקור', 'שאינו', 'במקומ', 'צורכ', 'בנוספימ',
+    'קלה', 'קשה', 'משמעותי', 'ללא', 'המטופל', 'המקומ', 'יולדת', 'מצב', 'למצב', 'במצב', 'רפואיות', 'רפואי', 'לצוות', 'סיוע', 'אירוע', 'עצמי', 'יציאה',
+    'נמצאה', 'כתובת', 'המוקד', 'משטרה', 'עזב', 'תגובת', 'כאבימ', 'כאבי']
+    .forEach(function (w) { TITLE_STOP[w] = 1; });
   function suggestCases(notes, cases) {
     if (!cases || !cases.length) return [];
     var hay = ' ' + norm(notes.map(function (n) { return n.text; }).join(' ')) + ' ';
     return cases.map(function (cs) {
-      var terms = (cs.keywords || []).concat(norm(cs.title).split(' ').filter(function (w) { return w.length >= 3; }));
-      var hits = terms.filter(function (t) { t = norm(t); return t && hay.indexOf(t) !== -1; });
-      return { id: cs.id, score: hits.length, hits: uniq(hits) };
+      var terms = (cs.keywords || []).concat(norm(cs.title).split(' ').filter(function (w) { return w.length >= 3 && !TITLE_STOP[w]; }));
+      var hits = uniq(terms.map(norm).filter(function (t) { return t && hay.indexOf(t) !== -1; }));
+      hits = hits.filter(function (h) { return !hits.some(function (o) { return o !== h && o.indexOf(h) !== -1; }); }); // "בחזה" inside "כאבים בחזה" counts once
+      return { id: cs.id, score: hits.length, hits: hits };
     }).filter(function (x) { return x.score > 0; }).sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
   }
 
   /* ---------- plain-text report ---------- */
   var VITAL_LABELS = [
     ['pulse', 'דופק'], ['pulseRhythm', ''], ['rr', 'נשימות'], ['rrQuality', ''], ['bp', 'ל״ד'],
-    ['spo2Air', 'סטורציה באוויר'], ['spo2O2', 'סטורציה עם חמצן'], ['spo2', 'סטורציה (לא צוין אם עם חמצן)'], ['glucose', 'סוכר'], ['fast', 'FAST']
+    ['spo2Air', 'סטורציה באוויר'], ['spo2O2', 'סטורציה עם חמצן'], ['spo2', 'סטורציה (לא צוין אם עם חמצן)'], ['glucose', 'סוכר'], ['temp', 'חום'], ['fast', 'FAST']
   ];
   var HISTORY_LABELS = { background: 'רקע רפואי', story: 'סיפור המקרה', findings: 'ממצאים', unusual: 'פרטים חריגים', witnesses: 'עדויות', followup: 'המשך טיפול' };
   var TX_LABELS = { oxygen: 'חמצן', dressings: 'חבישות', meds: 'תרופות', procedures: 'הליכים' };

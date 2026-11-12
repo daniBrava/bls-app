@@ -254,6 +254,8 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 
 /* ---------- report editor ---------- */
 .rp-sec{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.3rem .9rem .8rem;box-shadow:var(--shadow)}
+.case-sug{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.4rem}
+.case-sug .chip{white-space:normal;text-align:start;height:auto;min-height:2.3rem}
 .rp-sec>h2{font-size:1.02rem;margin:.6rem 0 .3rem;display:flex;align-items:center;gap:.5rem}
 .field{padding:.45rem 0}
 .field+.field{border-top:1px solid var(--line)}
@@ -789,6 +791,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   var X = window.BLSExtract;
   var CASES = (function () { try { var c = JSON.parse(document.getElementById('cases-data').textContent); return Array.isArray(c) ? c : (c && c.cases) || []; } catch (e) { return []; } })();
   var CASE_BY_ID = {}; CASES.forEach(function (c) { CASE_BY_ID[c.id] = c; });
+  function caseLabel(c) { return c.code != null ? '(' + c.code + ') ' + c.title : c.title; }
 
   var EV_KEY = 'bls.events.v1';
   var memEvents = null, storageOk = true;
@@ -933,7 +936,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   var VITAL_FIELDS = [
     ['pulse', 'דופק', 'num'], ['pulseRhythm', 'סדירות דופק', ['', 'סדיר', 'לא סדיר']], ['rr', 'נשימות (קצב)', 'num'],
     ['rrQuality', 'אופי הנשימה', 'text'], ['bp', 'לחץ דם', 'text'], ['spo2Air', 'סטורציה באוויר', 'num'], ['spo2O2', 'סטורציה עם חמצן', 'num'],
-    ['spo2', 'סטורציה (לא צוין)', 'num'], ['glucose', 'סוכר בדם', 'text'], ['fast', 'FAST', 'wide']
+    ['spo2', 'סטורציה (לא צוין)', 'num'], ['glucose', 'סוכר בדם', 'text'], ['temp', 'חום גוף', 'text'], ['fast', 'FAST', 'wide']
   ];
   var SECTIONS = {
     demo: { keys: ['first', 'last', 'age', 'sex', 'idnum', 'hmo'], labels: X.DEMO_LABELS },
@@ -944,7 +947,10 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
 
   function generate(e) {
     var r = X.extract(e.notes, { cases: CASES });
-    if (e.report) { r.caseId = e.report.caseId || ''; r.caseText = e.report.caseText || ''; }
+    if (e.report) {
+      if (e.report.caseId && !e.report.caseAuto) { r.caseId = e.report.caseId; r.caseAuto = false; }
+      r.caseText = e.report.caseText || '';
+    }
     e.report = r; e.reportEdited = false; saveEvents();
   }
   function isStale(e) { return e.report && (e.updated || 0) > e.report.generatedAt; }
@@ -978,7 +984,10 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var data = e.report[sec] || {};
     var present = SECTIONS[sec].keys.filter(function (k) { return data[k] || shown[sec + '.' + k]; });
     var missing = SECTIONS[sec].keys.filter(function (k) { return present.indexOf(k) === -1; });
-    return '<section class="rp-sec"><h2>' + esc(title) + '</h2>' +
+    var head = sec === 'history' && present.length
+      ? '<h2><span style="flex:1">' + esc(title) + '</span><button class="btn sm" type="button" id="rp-read" aria-pressed="' + speaking + '">' + (speaking ? '■ עצירה' : '▶ הקראה') + '</button></h2>'
+      : '<h2>' + esc(title) + '</h2>';
+    return '<section class="rp-sec">' + head +
       (present.length ? (sec === 'demo' ? '<div class="vgrid">' : '') + present.map(function (k) { return fieldHTML(sec, k, data[k] || '', e); }).join('') + (sec === 'demo' ? '</div>' : '') : '<p class="empty-rp">לא נמצא מידע בפתקים.</p>') +
       addSelect(sec, missing) + '</section>';
   }
@@ -1003,16 +1012,20 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (CASES.length) {
       var sug = (r.caseSuggestions || []).map(function (s) { return s.id; });
       var opts = '<option value="">בחירת מקרה…</option>';
-      if (sug.length) opts += '<optgroup label="מתאימים לפתקים">' + sug.map(function (id) { var c = CASE_BY_ID[id]; return c ? '<option value="' + esc(id) + '"' + (r.caseId === id ? ' selected' : '') + '>' + esc(c.title) + '</option>' : ''; }).join('') + '</optgroup>';
-      opts += '<optgroup label="כל המקרים">' + CASES.map(function (c) { return '<option value="' + esc(c.id) + '"' + (r.caseId === c.id && sug.indexOf(c.id) === -1 ? ' selected' : '') + '>' + esc(c.title) + '</option>'; }).join('') + '</optgroup>';
-      html += '<div class="field"><select data-path="caseId">' + opts + '</select></div>' +
+      if (sug.length) opts += '<optgroup label="מתאימים לפתקים">' + sug.map(function (id) { var c = CASE_BY_ID[id]; return c ? '<option value="' + esc(id) + '"' + (r.caseId === id ? ' selected' : '') + '>' + esc(caseLabel(c)) + '</option>' : ''; }).join('') + '</optgroup>';
+      opts += '<optgroup label="כל המקרים">' + CASES.map(function (c) { return '<option value="' + esc(c.id) + '"' + (r.caseId === c.id && sug.indexOf(c.id) === -1 ? ' selected' : '') + '>' + esc(caseLabel(c)) + '</option>'; }).join('') + '</optgroup>';
+      var note = '';
+      if (r.caseId && r.caseAuto) note = '<p class="hint" style="margin:.35rem .1rem 0">נבחר לפי הפתקים כמקרה המתאים ביותר. יש לאשר או לשנות.</p>';
+      else if (!r.caseId && sug.length > 1) note = '<p class="hint" style="margin:.2rem .1rem .4rem">אין מקרה אחד ברור. הצעות לפי הפתקים:</p><div class="case-sug">' +
+        sug.map(function (id) { var c = CASE_BY_ID[id]; return c ? '<button class="chip" type="button" data-case="' + esc(id) + '">' + esc(caseLabel(c)) + '</button>' : ''; }).join('') + '</div>';
+      html += note + '<div class="field"><select data-path="caseId">' + opts + '</select></div>' +
         '<div class="field"><div class="lbl">פירוט (לא חובה)</div><input data-path="caseText" value="' + esc(r.caseText || '') + '"></div>';
     } else {
       html += '<div class="field"><input data-path="caseText" value="' + esc(r.caseText || '') + '" placeholder="רשימת המקרים טרם הוגדרה — אפשר לכתוב ידנית"></div>';
     }
     return html + '</section>';
   }
-  function reportMeta(e) { var c = CASE_BY_ID[e.report.caseId]; return { start: e.start, caseTitle: c ? c.title : '' }; }
+  function reportMeta(e) { var c = CASE_BY_ID[e.report.caseId]; return { start: e.start, caseTitle: c ? caseLabel(c) : '' }; }
 
   var previewOpen = false;
   function renderReport(id) {
@@ -1066,7 +1079,11 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   $('report').addEventListener('change', function (ev) {
     var e = getEvent(currentEventId()); if (!e || !e.report) return;
     var t = ev.target;
-    if (t.hasAttribute('data-path') && t.tagName === 'SELECT') { setPath(e.report, t.getAttribute('data-path'), t.value); touched(e); }
+    if (t.hasAttribute('data-path') && t.tagName === 'SELECT') {
+      setPath(e.report, t.getAttribute('data-path'), t.value);
+      if (t.getAttribute('data-path') === 'caseId') { e.report.caseAuto = false; touched(e); renderReport(e.id); return; }
+      touched(e);
+    }
     if (t.hasAttribute('data-v') && t.tagName === 'SELECT') { var p0 = t.getAttribute('data-v').split('.'); e.report.vitals[+p0[0]].values[p0[1]] = t.value; touched(e); }
     if (t.hasAttribute('data-add') && t.value) {
       var sec = t.getAttribute('data-add'); shown[sec + '.' + t.value] = true;
@@ -1103,7 +1120,9 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       });
       return;
     }
+    if (t.hasAttribute('data-case')) { e.report.caseId = t.getAttribute('data-case'); e.report.caseAuto = false; touched(e); renderReport(e.id); return; }
     switch (t.id) {
+      case 'rp-read': readHistory(e); break;
       case 'add-round': e.report.vitals.push({ t: Date.now(), values: { pulse: '' }, src: [] }); shown['v' + (e.report.vitals.length - 1) + '.pulse'] = true; touched(e); renderReport(e.id); break;
       case 'add-complaint': shown.complaint = true; renderReport(e.id); var c = $('report').querySelector('[data-path="complaint"]'); if (c) c.focus(); break;
       case 'regen':
@@ -1124,6 +1143,36 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
         break;
     }
   });
+  /* ---------- read the anamnesis aloud (on-device speech, Hebrew voice) ---------- */
+  var speaking = false;
+  function heVoice() {
+    try { return speechSynthesis.getVoices().filter(function (v) { return /^he|^iw/i.test(v.lang); })[0] || null; } catch (err) { return null; }
+  }
+  function stopReading() {
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (err) { /* ignore */ }
+    if (speaking) { speaking = false; var b = $('rp-read'); if (b) { b.textContent = '▶ הקראה'; b.setAttribute('aria-pressed', 'false'); } }
+  }
+  function readHistory(e) {
+    var msg = $('rp-msg');
+    if (speaking) { stopReading(); return; }
+    if (!('speechSynthesis' in window)) { msg.textContent = 'המכשיר לא תומך בהקראה.'; return; }
+    var h = e.report.history || {}, parts = [];
+    SECTIONS.history.keys.forEach(function (k) { if (h[k] && h[k].trim()) parts.push(X.HISTORY_LABELS[k] + '. ' + h[k].trim()); });
+    if (!parts.length) { msg.textContent = 'אין טקסט באנמנזה להקראה.'; return; }
+    var voice = heVoice();
+    if (!voice) msg.textContent = 'לא נמצא קול בעברית במכשיר. באייפון: הגדרות ← נגישות ← תוכן מדובר ← קולות ← עברית.';
+    speechSynthesis.cancel();
+    speaking = true;
+    var b = $('rp-read'); if (b) { b.textContent = '■ עצירה'; b.setAttribute('aria-pressed', 'true'); }
+    parts.forEach(function (text, i) {
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'he-IL'; if (voice) u.voice = voice; u.rate = 0.95;
+      if (i === parts.length - 1) u.onend = u.onerror = function () { stopReading(); };
+      speechSynthesis.speak(u);
+    });
+  }
+  try { if (window.speechSynthesis) speechSynthesis.getVoices(); } catch (err) { /* voices load lazily */ }
+
   $('rp-back').addEventListener('click', function () { var id = currentEventId(); location.hash = '#/event/' + encodeURIComponent(id); });
   document.querySelectorAll('[data-back]').forEach(function (b) { b.addEventListener('click', function () { location.hash = b.getAttribute('data-back'); }); });
 
@@ -1144,6 +1193,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   var current = 'v-list';
   function route() {
     var h = location.hash || '#/', m;
+    if (typeof stopReading === 'function') stopReading();
     if (current === 'v-list') state.listScroll = window.scrollY;
     if ((m = h.match(/^#\/card\/(.+)$/))) {
       show('v-card'); current = 'v-card';

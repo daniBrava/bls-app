@@ -16,7 +16,10 @@ const r = X.extract(mk([
 ]));
 assert.deepStrictEqual(r.demo, { first: 'יוסי', last: 'לוי', age: '62', sex: 'זכר', idnum: '123456782', hmo: 'כללית' });
 assert.ok(r.warnings.some((w) => w.field === 'demo.age'), 'conflicting ages are flagged');
-assert.strictEqual(r.complaint, 'כאב לוחץ במרכז החזה עם הקרנה ליד שמאל מלפני כחצי שעה');
+assert.strictEqual(r.complaint, 'כאבים בחזה', 'chief complaint = reason for the call');
+assert.ok(r.history.story.includes('מתלונן על כאב לוחץ'), "the patient's own words stay in the anamnesis");
+const narrative = Object.values(r.history).join(' ');
+assert.ok(!/דופק \d|ל"ד \d|סט׳ \d|סוכר \d/.test(narrative), 'no measurements in the anamnesis: ' + narrative);
 assert.deepStrictEqual(r.vitals[0].values, { pulse: '112', pulseRhythm: 'לא סדיר', bp: '150/95', spo2Air: '91', rr: '24', rrQuality: 'מאומצות' });
 assert.ok(r.vitals.some((v) => v.values.spo2O2 === '96' && v.values.pulse === '98'));
 assert.ok(r.vitals.some((v) => v.values.glucose === '145'));
@@ -41,3 +44,20 @@ assert.ok(r2.warnings.some((w) => w.field === 'demo.idnum'), 'bad ID check digit
 assert.ok(!r2.treatments.meds || !r2.treatments.meds.includes('אספירין'), 'negated drug is not listed as given');
 assert.ok(r2.history.unusual.includes('לא ניתן אספירין'));
 console.log('extract tests passed');
+
+// case suggestions from the organisation's list
+const cases = require('../../cases/cases.he-IL.json').cases;
+const top = (notes) => X.extract(mk(notes), { cases }).caseSuggestions.map((s) => s.id);
+assert.strictEqual(top(['מתלונן על כאב לוחץ בחזה עם הקרנה ליד שמאל'])[0], '16');
+assert.strictEqual(top(['ללא דופק וללא נשימה, התחלנו החייאה, חובר AED'])[0], '10');
+assert.ok(top(['דופק 80 סדיר, ירידת מים לפני שעה, צירים כל 3 דקות']).includes('52'));
+assert.ok(!top(['דופק 80 סדיר']).includes('210'), '"סדיר" must not suggest limb injury');
+const one = X.extract(mk(['הוזעקנו בשל כאבים בחזה', 'מתלונן על כאב לוחץ עם הקרנה ליד שמאל']), { cases });
+assert.strictEqual(one.caseId, '16'); assert.strictEqual(one.caseAuto, true);
+const many = X.extract(mk(['נפל מסולם, חבלת ראש, שבר פתוח ביד']), { cases });
+assert.strictEqual(many.caseId, '', 'no single clear case → nothing chosen');
+assert.ok(many.caseSuggestions.length >= 2, 'several candidates offered');
+const t2 = X.extract(mk(['חום גוף 39.5, סוכר 145 מ"ג/ד"ל בבדיקה']), { cases });
+assert.ok(t2.vitals.some((v) => v.values.temp === '39.5' && v.values.glucose === '145'));
+assert.ok(!t2.history.story, 'measurement-only note adds nothing to the anamnesis');
+console.log('case suggestion tests passed');
