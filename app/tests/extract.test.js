@@ -29,6 +29,8 @@ assert.ok(r.treatments.oxygen.includes('4 ליטר'));
 assert.ok(r.history.anamnesis.includes('לדברי אשתו') && r.history.anamnesis.includes('עבר צנתור'), 'medical history is part of the anamnesis');
 assert.ok(r.history.anamnesis.includes('פונה'));
 assert.deepStrictEqual(Object.keys(r.history), ['anamnesis'], 'one anamnesis field');
+assert.ok(!/יוסי|לוי|62|כבן 60|123456782|כללית|גבר/.test(r.history.anamnesis), 'name, age and other demographics stay out of the anamnesis: ' + r.history.anamnesis);
+assert.ok(r.history.anamnesis.includes('חיוור ומזיע'));
 assert.ok(!('dressings' in r.treatments), 'nothing invented');
 
 const r2 = X.extract(mk([

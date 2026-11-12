@@ -92,7 +92,7 @@
   var NAME_TOKEN = '([' + HB + '][' + HB + '\'"\\u05F3\\u05F4\\-]*)';
   var RE_FIRST = new RegExp('שם\\s*פרטי\\s*:?\\s*' + NAME_TOKEN, 'g');
   var RE_LAST = new RegExp('שם\\s*(?:ה)?משפחה\\s*:?\\s*' + NAME_TOKEN, 'g');
-  var RE_NAME = new RegExp(NOT_BEFORE + '(?:שמו|שמה|שם המטופל(?:ת)?|שם מלא\\s*:?|קוראים לו|קוראים לה|שם\\s*:)\\s*' + NAME_TOKEN + '(?:\\s+' + NAME_TOKEN + ')?', 'g');
+  var RE_NAME = new RegExp(NOT_BEFORE + '(?:שמו|שמה|בשם|שם המטופל(?:ת)?|שם מלא\\s*:?|קוראים לו|קוראים לה|שם\\s*:)\\s*' + NAME_TOKEN + '(?:\\s+' + NAME_TOKEN + ')?', 'g');
   var NAME_STOP = /^(בן|בת|כבן|כבת|גיל|בגיל|ת"?ז|תז|מטופל|מטופלת|נמצא|נמצאה|ידוע|ידועה|הוא|היא|של|עם|ללא|פרטי|משפחה|המשפחה|מלא)$/;
 
   var RE_PULSE = new RegExp(NOT_BEFORE + PFX + '(?:דופק|HR)\\s*:?\\s*(\\d{2,3})(?!\\d|:\\d)', 'gi');
@@ -236,7 +236,10 @@
           vitals.push({ field: field, value: value, t: at.t, explicit: at.explicit, src: src });
           if (m) { var end = eatContext(sen, m.index + m[0].length); addSpan(spans, m.index, end); addSpan(vspans, m.index, end); }
         }
-        function c(field, value, m, extra) { cand[field].push({ value: value, src: src, t: note.t, extra: extra }); if (m) addSpan(spans, m.index, m.index + m[0].length); }
+        function c(field, value, m, extra) {
+          cand[field].push({ value: value, src: src, t: note.t, extra: extra });
+          if (m) { addSpan(spans, m.index, m.index + m[0].length); addSpan(vspans, m.index, m.index + m[0].length); } // demographics go to their own section
+        }
 
         /* demographics */
         eachMatch(RE_FIRST, sen, function (m) { if (!NAME_STOP.test(m[1])) c('first', m[1], m); });
@@ -254,8 +257,8 @@
           if (/^כ?בן$/.test(kw)) c('sex', 'זכר');
           if (/^כ?בת$/.test(kw)) c('sex', 'נקבה');
         });
-        eachMatch(RE_SEX_M, sen, function (m) { if (!FAMILY_BEFORE.test(sen.slice(0, m.index))) c('sex', 'זכר'); });
-        eachMatch(RE_SEX_F, sen, function (m) { if (!FAMILY_BEFORE.test(sen.slice(0, m.index))) c('sex', 'נקבה'); });
+        eachMatch(RE_SEX_M, sen, function (m) { if (!FAMILY_BEFORE.test(sen.slice(0, m.index))) c('sex', 'זכר', m); });
+        eachMatch(RE_SEX_F, sen, function (m) { if (!FAMILY_BEFORE.test(sen.slice(0, m.index))) c('sex', 'נקבה', m); });
         eachMatch(RE_ID, sen, function (m) {
           var digits = m[1].replace(/\D/g, '');
           if (digits.length >= 5 && digits.length <= 9) c('idnum', digits, m, { valid: validIsraeliId(digits) });
@@ -323,7 +326,7 @@
         }
 
         /* narrative */
-        var clean = withoutSpans(sen, vspans); // measurements live in "בדיקות שבוצעו", not in the narrative
+        var clean = withoutSpans(sen, vspans); // measurements and demographics have their own sections, not the narrative
         var item = { text: clean, src: src };
         if (!clean) return;
         // One anamnesis, in the order it was written: background, story, findings, testimony and follow-up together.
