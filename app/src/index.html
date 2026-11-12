@@ -951,9 +951,11 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       if (e.report.caseId && !e.report.caseAuto) { r.caseId = e.report.caseId; r.caseAuto = false; }
       r.caseText = e.report.caseText || '';
     }
+    r.build = document.documentElement.dataset.build;
     e.report = r; e.reportEdited = false; saveEvents();
   }
-  function isStale(e) { return e.report && (e.updated || 0) > e.report.generatedAt; }
+  // stale = notes changed after the draft, or the draft was made by an earlier version of the app
+  function isStale(e) { return e.report && ((e.updated || 0) > e.report.generatedAt || e.report.build !== document.documentElement.dataset.build); }
 
   function srcHTML(e, ids) {
     var byId = {}; e.notes.forEach(function (n) { byId[n.id] = n; });
@@ -1035,7 +1037,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (!e.notes.length) { el.innerHTML = '<div class="empty">אין עדיין פתקים באירוע הזה.<br><a class="linkbtn" href="#/event/' + encodeURIComponent(e.id) + '">להוספת פתקים</a></div>'; return; }
     if (!e.report || (isStale(e) && !e.reportEdited)) generate(e);
     var r = e.report, html = storageNote();
-    if (isStale(e)) html += '<div class="notice stale"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>נוספו או שונו פתקים אחרי הפקת הטיוטה.</b><br><button class="linkbtn" type="button" id="regen" style="padding:.3rem 0">עדכון הטיוטה מהפתקים</button> (העריכות הידניות יוחלפו)</div></div>';
+    if (isStale(e)) html += '<div class="notice stale"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>' + (e.report.build !== document.documentElement.dataset.build ? 'האפליקציה עודכנה אחרי הפקת הטיוטה.' : 'נוספו או שונו פתקים אחרי הפקת הטיוטה.') + '</b><br><button class="linkbtn" type="button" id="regen" style="padding:.3rem 0">עדכון הטיוטה מהפתקים</button> (העריכות הידניות יוחלפו)</div></div>';
     if (r.warnings && r.warnings.length) html += '<div class="warns">' + r.warnings.map(function (w) { return '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div>' + esc(w.text) + '</div></div>'; }).join('') + '</div>';
     html += '<p class="privacy" style="margin-top:.9rem">הטיוטה כוללת רק מידע שנכתב בפתקים. שדות שלא תועדו לא מופיעים, ואפשר להוסיף אותם ידנית. כפתור "מקור" מציג את הפתק שממנו נלקח הערך.</p>';
     html += sectionHTML('demo', 'פרטים דמוגרפיים', e);
