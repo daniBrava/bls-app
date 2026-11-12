@@ -60,4 +60,12 @@ assert.ok(many.caseSuggestions.length >= 2, 'several candidates offered');
 const t2 = X.extract(mk(['חום גוף 39.5, סוכר 145 מ"ג/ד"ל בבדיקה']), { cases });
 assert.ok(t2.vitals.some((v) => v.values.temp === '39.5' && v.values.glucose === '145'));
 assert.ok(!t2.history.story, 'measurement-only note adds nothing to the anamnesis');
+// dictated note: one run, no punctuation
+const d = X.extract(mk(['\u200fמתלוננת על כאבים חזקים בבטן אין שלשולים אין הקאות אכלה פעם אחרונה לפני כמה שעות לקחה אקמול לפני שעה לחץ דם 150 על 100 סטורציה 98 אין היסטוריה רפואית דומה', 'סוכר 110, דופק מהיר וסדיר']), { cases });
+assert.strictEqual(d.complaint, 'כאבים חזקים בבטן');
+const dn = Object.values(d.history).join(' ');
+assert.ok(dn.includes('אין שלשולים') && dn.includes('לקחה אקמול') && dn.includes('אין היסטוריה רפואית דומה'), dn);
+assert.ok(!/150|98|110|דופק|סטורציה|לחץ דם/.test(dn), 'measurements stay out of the anamnesis: ' + dn);
+assert.ok(d.vitals.some((v) => v.values.bp === '150/100' && v.values.pulse === 'מהיר'));
+assert.strictEqual(d.caseId, '70');
 console.log('case suggestion tests passed');

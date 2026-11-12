@@ -24,7 +24,23 @@
   var q = function (s) { return s.replace(/"/g, Q); }; // allow ל"ד, ל״ד, לד
 
   /* ---------- sentence splitting ---------- */
+  // Dictated notes often come as one long run without punctuation. Start a new clause before words that
+  // usually open a new statement (negations, history, intake, another complaint) and before measurements.
+  var CLAUSE_START = new RegExp('\\s+(?=(?:ו)?(?:אין|ללא|שולל|שוללת|שוללים|אכל|אכלה|אכלו|שתה|שתתה|לקח|לקחה|לקחו|נטל|נטלה|יציאות|ידוע|ידועה|רקע|לדברי|היסטוריה|בעבר|מתלונן|מתלוננת|סובל|סובלת|הקיא|הקיאה|דופק|לחץ\\s*דם|ל' + Q + 'ד|סטורציה|סטורציות|סט' + Q + '|סאטורציה|נשימות|סוכר|חום\\s+גוף|טמפרטורה|FAST|פאסט)(?![' + HB + ']))', 'g');
+  var RE_BIDI = /[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
   function splitSentences(text) {
+    var out = [];
+    splitPunct(String(text || '').replace(RE_BIDI, '')).forEach(function (sen) {
+      var parts = sen.split(CLAUSE_START).map(function (c) { return c.replace(/^[\s,;:\-–]+|[\s,;:\-–]+$/g, ''); }).filter(Boolean);
+      for (var i = 0; i < parts.length; i++) {
+        // a lone word ("אין", "ללא") belongs to what follows it
+        if (i < parts.length - 1 && !/\s/.test(parts[i])) { parts[i + 1] = parts[i] + ' ' + parts[i + 1]; continue; }
+        out.push(parts[i]);
+      }
+    });
+    return out;
+  }
+  function splitPunct(text) {
     var out = [], cur = '', s = String(text || '');
     for (var i = 0; i < s.length; i++) {
       var c = s[i];
@@ -81,6 +97,7 @@
 
   var RE_PULSE = new RegExp(NOT_BEFORE + PFX + '(?:דופק|HR)\\s*:?\\s*(\\d{2,3})(?!\\d|:\\d)', 'gi');
   var RE_NO_PULSE = /(?:ללא|אין|בלי)\s+דופק|דופק\s+(?:לא\s+)?(?:נמוש|נמושש|לא נמצא|לא נמוש|לא נמושש)/g;
+  var RE_PULSE_WORD = /(?:^|[^א-ת])[וה]?דופק\s+(מהיר|איטי|חלש|חזק|תקין|נמוש|מלא|פדיפרי|רדיאלי)((?:\s+ו?(?:לא\s*סדיר|אי[\s-]?סדיר|סדיר))?)/g;
   var RE_RHYTHM = /(לא\s*סדיר|לא-סדיר|אי[\s-]?סדיר|סדיר)/;
   var RE_RR = new RegExp(NOT_BEFORE + PFX + '(?:נשימות|נשימה|קצב\\s+נשימ(?:ה|ות)|RR)\\s*:?\\s*(\\d{1,2})(?!\\d|:\\d)', 'gi');
   var RE_RR_QUALITY = /(מאומצ(?:ת|ות|ים)?|תקינ(?:ה|ות|ים)?|תקין|שטחי(?:ת|ות)?|רדוד(?:ה|ות)?|רועש(?:ת|ות)?)/;
@@ -171,6 +188,7 @@
       .replace(/(,\s*)+/g, ', ').replace(/\s+([,.;:!?])/g, '$1')
       .replace(/^[\s,;:\-–.]+/, '').replace(/[\s,;:\-–]+$/, '').replace(/,\s*\./g, '.')
       .replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+    out = out.replace(/^[\s,;:\-–.]+/, '');
     return /[א-תA-Za-z]{2}/.test(out) ? out : '';
   }
   function eachMatch(re, s, fn) { re.lastIndex = 0; var m; while ((m = re.exec(s))) { fn(m); if (!re.global) break; } }
@@ -254,6 +272,12 @@
           if (r) { vitals.push({ field: 'pulseRhythm', value: r[1].replace(/-/g, ' ').replace(/^אי\s?/, 'לא '), t: at.t, explicit: at.explicit, src: src }); }
         });
         eachMatch(RE_NO_PULSE, sen, function (m) { v('pulse', 'ללא דופק', m); });
+        eachMatch(RE_PULSE_WORD, sen, function (m) {
+          if (vitals.some(function (x) { return x.field === 'pulse' && x.src === src && x.t === at.t; })) return;
+          v('pulse', m[1], m);
+          var r = (m[2] || '').match(RE_RHYTHM);
+          if (r) vitals.push({ field: 'pulseRhythm', value: r[1].replace(/-/g, ' ').replace(/^אי\s?/, 'לא '), t: at.t, explicit: at.explicit, src: src });
+        });
         eachMatch(RE_RR, sen, function (m) {
           if (/קוצר\s*$/.test(sen.slice(0, m.index))) return;
           v('rr', m[1], m);
@@ -359,7 +383,10 @@
     });
     if (complaint) sources.complaint = complaint.src;
 
-    var caseSuggestions = suggestCases(notes, opts.cases || []);
+    // Match cases on what was said and done, not on measurement numbers ("לחץ דם 150" is not "יתר לחץ דם").
+    var caseText = [complaint ? complaint.value : ''].concat(Object.keys(history).map(function (k) { return history[k]; }))
+      .concat(Object.keys(treatments).map(function (k) { return treatments[k]; })).join(' ');
+    var caseSuggestions = suggestCases(caseText, opts.cases || []);
     // One case when it clearly fits best; otherwise leave it open and offer the candidates.
     var clear = caseSuggestions.length === 1 || (caseSuggestions.length > 1 && caseSuggestions[0].score >= 2 * caseSuggestions[1].score);
 
@@ -391,16 +418,18 @@
   var TITLE_STOP = {};
   ['חשד', 'בעיות', 'אחרות', 'לאחר', 'פגיעת', 'חבלת', 'חבלה', 'ביטול', 'מינונ', 'מינון', 'יתר', 'ידי', 'מקור', 'שאינו', 'במקומ', 'צורכ', 'בנוספימ',
     'קלה', 'קשה', 'משמעותי', 'ללא', 'המטופל', 'המקומ', 'יולדת', 'מצב', 'למצב', 'במצב', 'רפואיות', 'רפואי', 'לצוות', 'סיוע', 'אירוע', 'עצמי', 'יציאה',
-    'נמצאה', 'כתובת', 'המוקד', 'משטרה', 'עזב', 'תגובת', 'כאבימ', 'כאבי']
+    'נמצאה', 'כתובת', 'המוקד', 'משטרה', 'עזב', 'תגובת', 'כאבימ', 'כאבי', 'דומ', 'לחצ']
     .forEach(function (w) { TITLE_STOP[w] = 1; });
-  function suggestCases(notes, cases) {
+  function suggestCases(text, cases) {
     if (!cases || !cases.length) return [];
-    var hay = ' ' + norm(notes.map(function (n) { return n.text; }).join(' ')) + ' ';
+    var hay = ' ' + norm(text) + ' ';
     return cases.map(function (cs) {
-      var terms = (cs.keywords || []).concat(norm(cs.title).split(' ').filter(function (w) { return w.length >= 3 && !TITLE_STOP[w]; }));
-      var hits = uniq(terms.map(norm).filter(function (t) { return t && hay.indexOf(t) !== -1; }));
+      var kw = uniq((cs.keywords || []).map(norm).filter(Boolean));
+      var tw = norm(cs.title).split(' ').filter(function (w) { return w.length >= 3 && !TITLE_STOP[w] && kw.indexOf(w) === -1; });
+      var hits = uniq(kw.concat(tw).filter(function (t) { return hay.indexOf(t) !== -1; }));
       hits = hits.filter(function (h) { return !hits.some(function (o) { return o !== h && o.indexOf(h) !== -1; }); }); // "בחזה" inside "כאבים בחזה" counts once
-      return { id: cs.id, score: hits.length, hits: hits };
+      var score = hits.reduce(function (n, h) { return n + (kw.indexOf(h) !== -1 ? 2 : 1); }, 0); // a listed keyword counts more than a title word
+      return { id: cs.id, score: score, hits: hits };
     }).filter(function (x) { return x.score > 0; }).sort(function (a, b) { return b.score - a.score; }).slice(0, 3);
   }
 
@@ -420,7 +449,7 @@
       if (!val || k === 'pulseRhythm' || k === 'rrQuality') return;
       var s = /^ללא/.test(val) ? val : p[1] + ' ' + val;
       if (/^spo2/.test(k) && /^\d+$/.test(val)) s += '%';
-      if (k === 'pulse' && values.pulseRhythm) s += ' ' + values.pulseRhythm;
+      if (k === 'pulse' && values.pulseRhythm) s += (/^\d/.test(val) ? ' ' : ', ') + values.pulseRhythm;
       if (k === 'rr' && values.rrQuality) s += ' ' + values.rrQuality;
       if (k === 'fast') s = 'FAST: ' + val;
       parts.push(s);
