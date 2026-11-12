@@ -2,9 +2,10 @@
    The build ID changes whenever the cards file or the app changes, which makes the
    browser install the new version and drop the old cache. */
 var CACHE = 'bls-cards-__BUILD_ID__';
+// Note: no './index.html' — some hosts (Cloudflare Pages) redirect it to './', and a redirected
+// response served for a navigation is refused by Safari ("the service worker has redirections").
 var ASSETS = [
   './',
-  './index.html',
   './manifest.webmanifest',
   './cards.he-IL.json',
   './icons/icon-180.png',
@@ -13,8 +14,17 @@ var ASSETS = [
 ];
 
 self.addEventListener('install', function (e) {
+  self.skipWaiting(); // take over right away (also replaces a broken earlier version)
   e.waitUntil(caches.open(CACHE).then(function (c) {
-    return c.addAll(ASSETS.map(function (u) { return new Request(u, { cache: 'reload' }); }));
+    return Promise.all(ASSETS.map(function (u) {
+      var req = new Request(u, { cache: 'reload' });
+      return fetch(req).then(function (res) {
+        if (!res.ok) throw new Error('precache failed: ' + u);
+        if (!res.redirected) return c.put(req, res);
+        // store a clean copy so it is never served as a redirect
+        return res.blob().then(function (body) { return c.put(req, new Response(body, { status: 200, headers: res.headers })); });
+      });
+    }));
   }));
 });
 
@@ -36,9 +46,9 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.indexOf('/api/') !== -1) return; // server functions always go to the network
   if (req.mode === 'navigate') {
-    e.respondWith(caches.match('./index.html', { cacheName: CACHE }).then(function (r) {
+    e.respondWith(caches.match('./', { cacheName: CACHE }).then(function (r) {
       return r || fetch(req);
-    }));
+    }).catch(function () { return fetch(req); }));
     return;
   }
   e.respondWith(caches.match(req, { cacheName: CACHE, ignoreSearch: true }).then(function (r) {
