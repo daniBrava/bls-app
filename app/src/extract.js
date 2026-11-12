@@ -160,7 +160,6 @@
       'נפיחות', 'עיוות', 'שבר', 'כוויה', 'כוויות', 'GCS', 'AVPU', 'מבולבל', 'מבולבלת', 'מתמצא', 'מתמצאת', 'ער', 'ערה', 'צניחת', 'חולשת', 'חולשה', 'הקאה', 'הקיא', 'הקיאה',
       'חרחורים', 'צפצופים', 'חם למגע', 'קר למגע', 'לח', 'פריחה', 'נפוח', 'נפוחה', 'שוכב', 'שוכבת', 'יושב', 'יושבת', 'עומד', 'נופל', 'נפל', 'נפלה'])]
   ];
-  var BUCKET_ORDER = ['background', 'story', 'findings', 'unusual', 'witnesses', 'followup'];
 
   /* ---------- helpers ---------- */
   function addSpan(spans, start, end) { spans.push([start, end]); }
@@ -213,7 +212,7 @@
     var cand = { first: [], last: [], age: [], sex: [], idnum: [], hmo: [] };
     var vitals = [];
     var tx = { oxygen: [], dressings: [], meds: [], procedures: [] };
-    var hist = { background: [], story: [], findings: [], unusual: [], witnesses: [], followup: [] };
+    var narrative = [];
     var warnings = [];
 
     /* chief complaint: an explicit complaint beats the dispatch reason; earliest wins */
@@ -327,14 +326,11 @@
         var clean = withoutSpans(sen, vspans); // measurements live in "בדיקות שבוצעו", not in the narrative
         var item = { text: clean, src: src };
         if (!clean) return;
-        if (BUCKETS[0][1].test(sen)) { hist.followup.push(item); return; }
+        // One anamnesis, in the order it was written: background, story, findings, testimony and follow-up together.
+        if (BUCKETS[0][1].test(sen)) { narrative.push(item); return; } // follow-up stays even when it mentions a treatment
         if (isTx || isComplaint) return;
         if (residualWords(sen, spans) < 1) return; // only demographics / measurements
-        if (negated) { hist.unusual.push(item); return; }
-        for (var b = 1; b < BUCKETS.length; b++) {
-          if (BUCKETS[b][1].test(sen)) { hist[BUCKETS[b][0]].push(item); return; }
-        }
-        hist.story.push(item);
+        narrative.push(item);
       });
     });
 
@@ -368,11 +364,10 @@
 
     /* narrative and treatments → verbatim text */
     var history = {};
-    BUCKET_ORDER.forEach(function (k) {
-      if (!hist[k].length) return;
-      history[k] = hist[k].map(function (x) { return endPunct(x.text); }).join(' ');
-      sources['hist.' + k] = uniq(hist[k].map(function (x) { return x.src; }));
-    });
+    if (narrative.length) {
+      history.anamnesis = narrative.map(function (x) { return endPunct(x.text); }).join(' ');
+      sources['hist.anamnesis'] = uniq(narrative.map(function (x) { return x.src; }));
+    }
     var treatments = {};
     Object.keys(tx).forEach(function (k) {
       if (!tx[k].length) return;
@@ -438,7 +433,7 @@
     ['pulse', 'דופק'], ['pulseRhythm', ''], ['rr', 'נשימות'], ['rrQuality', ''], ['bp', 'ל״ד'],
     ['spo2Air', 'סטורציה באוויר'], ['spo2O2', 'סטורציה עם חמצן'], ['spo2', 'סטורציה (לא צוין אם עם חמצן)'], ['glucose', 'סוכר'], ['temp', 'חום'], ['fast', 'FAST']
   ];
-  var HISTORY_LABELS = { background: 'רקע רפואי', story: 'סיפור המקרה', findings: 'ממצאים', unusual: 'פרטים חריגים', witnesses: 'עדויות', followup: 'המשך טיפול' };
+  var HISTORY_LABELS = { anamnesis: 'אנמנזה וסיפור המקרה' };
   var TX_LABELS = { oxygen: 'חמצן', dressings: 'חבישות', meds: 'תרופות', procedures: 'הליכים' };
   var DEMO_LABELS = { first: 'שם פרטי', last: 'שם משפחה', age: 'גיל', sex: 'מין', idnum: 'ת״ז', hmo: 'קופת חולים' };
 
@@ -471,7 +466,7 @@
     if (caseLine) L.push('', 'המקרה שנמצא: ' + caseLine);
     if (r.complaint) L.push('', 'תלונה עיקרית: ' + r.complaint);
     var hk = Object.keys(HISTORY_LABELS).filter(function (k) { return r.history && r.history[k]; });
-    if (hk.length) { L.push('', 'אנמנזה וסיפור המקרה'); hk.forEach(function (k) { L.push(HISTORY_LABELS[k] + ': ' + r.history[k]); }); }
+    if (hk.length) { L.push('', 'אנמנזה וסיפור המקרה'); hk.forEach(function (k) { L.push(r.history[k]); }); }
     var vs = (r.vitals || []).filter(function (x) { return vitalLine(x.values); });
     if (vs.length) { L.push('', 'בדיקות שבוצעו'); vs.forEach(function (x) { L.push(hhmm(x.t) + ' — ' + vitalLine(x.values)); }); }
     var tk = Object.keys(TX_LABELS).filter(function (k) { return r.treatments && r.treatments[k]; });

@@ -17,7 +17,7 @@ const r = X.extract(mk([
 assert.deepStrictEqual(r.demo, { first: 'יוסי', last: 'לוי', age: '62', sex: 'זכר', idnum: '123456782', hmo: 'כללית' });
 assert.ok(r.warnings.some((w) => w.field === 'demo.age'), 'conflicting ages are flagged');
 assert.strictEqual(r.complaint, 'כאבים בחזה', 'chief complaint = reason for the call');
-assert.ok(r.history.story.includes('מתלונן על כאב לוחץ'), "the patient's own words stay in the anamnesis");
+assert.ok(r.history.anamnesis.includes('מתלונן על כאב לוחץ'), "the patient's own words stay in the anamnesis");
 const narrative = Object.values(r.history).join(' ');
 assert.ok(!/דופק \d|ל"ד \d|סט׳ \d|סוכר \d/.test(narrative), 'no measurements in the anamnesis: ' + narrative);
 assert.deepStrictEqual(r.vitals[0].values, { pulse: '112', pulseRhythm: 'לא סדיר', bp: '150/95', spo2Air: '91', rr: '24', rrQuality: 'מאומצות' });
@@ -26,8 +26,9 @@ assert.ok(r.vitals.some((v) => v.values.glucose === '145'));
 assert.ok(r.treatments.meds.includes('אספירין 300'));
 assert.ok(!r.treatments.meds.includes('100 מ"ג קבוע'), 'home medication is history, not treatment');
 assert.ok(r.treatments.oxygen.includes('4 ליטר'));
-assert.ok(r.history.witnesses.includes('לדברי אשתו'));
-assert.ok(r.history.followup.includes('פונה'));
+assert.ok(r.history.anamnesis.includes('לדברי אשתו') && r.history.anamnesis.includes('עבר צנתור'), 'medical history is part of the anamnesis');
+assert.ok(r.history.anamnesis.includes('פונה'));
+assert.deepStrictEqual(Object.keys(r.history), ['anamnesis'], 'one anamnesis field');
 assert.ok(!('dressings' in r.treatments), 'nothing invented');
 
 const r2 = X.extract(mk([
@@ -42,7 +43,7 @@ assert.ok(r2.vitals.some((v) => v.values.pulse === '60' && new Date(v.t).getMinu
 assert.ok(r2.vitals.some((v) => v.values.glucose === '45') && !r2.vitals.some((v) => v.values.glucose === '15'));
 assert.ok(r2.warnings.some((w) => w.field === 'demo.idnum'), 'bad ID check digit is flagged');
 assert.ok(!r2.treatments.meds || !r2.treatments.meds.includes('אספירין'), 'negated drug is not listed as given');
-assert.ok(r2.history.unusual.includes('לא ניתן אספירין'));
+assert.ok(r2.history.anamnesis.includes('לא ניתן אספירין'));
 console.log('extract tests passed');
 
 // case suggestions from the organisation's list
@@ -59,7 +60,7 @@ assert.strictEqual(many.caseId, '', 'no single clear case → nothing chosen');
 assert.ok(many.caseSuggestions.length >= 2, 'several candidates offered');
 const t2 = X.extract(mk(['חום גוף 39.5, סוכר 145 מ"ג/ד"ל בבדיקה']), { cases });
 assert.ok(t2.vitals.some((v) => v.values.temp === '39.5' && v.values.glucose === '145'));
-assert.ok(!t2.history.story, 'measurement-only note adds nothing to the anamnesis');
+assert.ok(!t2.history.anamnesis, 'measurement-only note adds nothing to the anamnesis');
 // dictated note: one run, no punctuation
 const d = X.extract(mk(['\u200fמתלוננת על כאבים חזקים בבטן אין שלשולים אין הקאות אכלה פעם אחרונה לפני כמה שעות לקחה אקמול לפני שעה לחץ דם 150 על 100 סטורציה 98 אין היסטוריה רפואית דומה', 'סוכר 110, דופק מהיר וסדיר']), { cases });
 assert.strictEqual(d.complaint, 'כאבים חזקים בבטן');

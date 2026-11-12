@@ -940,7 +940,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   ];
   var SECTIONS = {
     demo: { keys: ['first', 'last', 'age', 'sex', 'idnum', 'hmo'], labels: X.DEMO_LABELS },
-    history: { keys: ['background', 'story', 'findings', 'unusual', 'witnesses', 'followup'], labels: X.HISTORY_LABELS },
+    history: { keys: ['anamnesis'], labels: X.HISTORY_LABELS },
     treatments: { keys: ['oxygen', 'dressings', 'meds', 'procedures'], labels: X.TX_LABELS }
   };
   var srcPrefix = { demo: 'demo.', history: 'hist.', treatments: 'tx.' };
@@ -973,7 +973,9 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
         ? '<select data-path="' + path + '">' + ['', 'זכר', 'נקבה'].concat(['זכר', 'נקבה'].indexOf(val) === -1 && val ? [val] : []).map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'
         : '<input data-path="' + path + '" value="' + esc(val) + '"' + (k === 'idnum' || k === 'age' ? ' inputmode="numeric"' : '') + '>');
     var hasSrc = e.report.sources[srcPrefix[sec] + k];
-    return '<div class="field"><div class="lbl"><span>' + esc(labels[k]) + '</span><span class="sp"></span>' + (hasSrc ? srcBtn(srcPrefix[sec] + k) : '') + '</div>' + input + '</div>';
+    var lbl = sec === 'history' ? '' : esc(labels[k]);
+    if (sec === 'history') input = input.replace('rows="2"', 'rows="5"');
+    return '<div class="field"><div class="lbl"><span>' + lbl + '</span><span class="sp"></span>' + (hasSrc ? srcBtn(srcPrefix[sec] + k) : '') + '</div>' + input + '</div>';
   }
   function addSelect(sec, missing) {
     if (!missing.length) return '';
@@ -1159,7 +1161,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (speaking) { stopReading(); return; }
     if (!('speechSynthesis' in window)) { msg.textContent = 'המכשיר לא תומך בהקראה.'; return; }
     var h = e.report.history || {}, parts = [];
-    SECTIONS.history.keys.forEach(function (k) { if (h[k] && h[k].trim()) parts.push(X.HISTORY_LABELS[k] + '. ' + h[k].trim()); });
+    SECTIONS.history.keys.forEach(function (k) { if (h[k] && h[k].trim()) parts.push(h[k].trim()); });
     if (!parts.length) { msg.textContent = 'אין טקסט באנמנזה להקראה.'; return; }
     var voice = heVoice();
     if (!voice) msg.textContent = 'לא נמצא קול בעברית במכשיר. באייפון: הגדרות ← נגישות ← תוכן מדובר ← קולות ← עברית.';
