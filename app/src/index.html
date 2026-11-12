@@ -254,6 +254,14 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 
 /* ---------- report editor ---------- */
 .rp-sec{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.3rem .9rem .8rem;box-shadow:var(--shadow)}
+.idbox{margin-top:.8rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.55rem .8rem}
+.idbox summary{cursor:pointer;font-weight:650;font-size:.9rem}
+.idbox .muted{color:var(--muted);font-weight:500;font-size:.8rem}
+.idbox input{width:100%;font:inherit;font-size:16px;margin-top:.5rem;padding:.55rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);direction:ltr;text-align:right}
+.ai-box{margin-top:1rem}
+.ai-box .notice{margin:0 0 .6rem}
+.ai-row{margin-top:.2rem}
+.btn[disabled]{opacity:.6}
 .case-sug{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.4rem}
 .case-sug .chip{white-space:normal;text-align:start;height:auto;min-height:2.3rem}
 .rp-sec>h2{font-size:1.02rem;margin:.6rem 0 .3rem;display:flex;align-items:center;gap:.5rem}
@@ -862,6 +870,8 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       '<div class="tools"><div class="chips" id="quick">' + QUICK.map(function (w) { return '<button class="chip" type="button" data-w="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>' +
       '<button class="btn primary sm" type="button" id="add-note">הוספה</button></div></div>' +
       '<p class="hint">אפשר להכתיב בעזרת המיקרופון שבמקלדת. אין צורך לכתוב לפי סדר.' + ('wakeLock' in navigator ? ' המסך לא יינעל כל עוד האירוע פתוח.' : '') + '</p>' +
+      '<details class="idbox"' + (e.idnum ? ' open' : '') + '><summary>ת״ז / דרכון <span class="muted">· נשמר רק בטלפון ולא נשלח לשרת</span></summary>' +
+      '<input id="ev-idnum" inputmode="numeric" autocomplete="off" value="' + esc(e.idnum || '') + '" aria-label="ת״ז או דרכון"></details>' +
       '<div class="ev-actions"><a class="btn" href="#/event/' + encodeURIComponent(e.id) + '/report">' + (e.report ? 'לטיוטת הדוח' : 'הפקת טיוטת דוח') + '</a></div>';
     html += notes.length ? '<p class="count-line">' + notes.length + ' פתקים · החדש למעלה</p><ul class="notes">' + notes.map(function (n) {
       if (editingNote === n.id) {
@@ -888,6 +898,11 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       try { tx.setSelectionRange(tx.value.length, tx.value.length); } catch (err) { /* ignore */ }
     });
     var et = $('edit-tx'); if (et) { autoGrow(et); et.addEventListener('input', function () { autoGrow(et); }); }
+    $('ev-idnum').addEventListener('input', function () {
+      e.idnum = this.value.trim();
+      if (e.report) { e.report.demo = e.report.demo || {}; e.report.demo.idnum = e.idnum; }
+      saveEvents();
+    });
 
     function addNote() {
       var text = tx.value.trim();
@@ -951,7 +966,81 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       if (e.report.caseId && !e.report.caseAuto) { r.caseId = e.report.caseId; r.caseAuto = false; }
       r.caseText = e.report.caseText || '';
     }
+    if (e.idnum) { r.demo.idnum = e.idnum; r.sources['demo.idnum'] = []; }
     r.build = document.documentElement.dataset.build;
+    e.report = r; e.reportEdited = false; saveEvents();
+  }
+
+  /* ---------- AI draft (online, on request) ---------- */
+  var ai = { state: 'unknown', busy: false }; // unknown | ready | off | login | noserver
+  function checkAI(done) {
+    if (ai.state !== 'unknown' || !navigator.onLine) return done && done();
+    fetch('api/draft', { method: 'GET', credentials: 'same-origin', cache: 'no-store', redirect: 'manual' }).then(function (r) {
+      if (r.type === 'opaqueredirect' || r.status === 401 || r.status === 302) { ai.state = 'login'; return; }
+      if (!r.ok) { ai.state = 'noserver'; return; }
+      return r.json().then(function (j) { ai.state = j && j.ai ? 'ready' : 'off'; }, function () { ai.state = 'login'; });
+    }).catch(function () { ai.state = 'noserver'; }).then(function () { done && done(); });
+  }
+  function aiBoxHTML(e) {
+    var r = e.report, html = '';
+    if (r.source === 'ai') html += '<div class="notice ai-note"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>הטיוטה סודרה בעזרת AI.</b> יש לבדוק כל שדה מול הפתקים (כפתור "מקור"). <button class="linkbtn" type="button" id="ai-undo" style="padding:.2rem 0">חזרה לחילוץ במכשיר</button></div></div>';
+    if (ai.state === 'ready') html += '<div class="ai-row"><button class="btn primary block" type="button" id="ai-run"' + (ai.busy ? ' disabled' : '') + '>' + (ai.busy ? 'מסדר את הטיוטה…' : (r.source === 'ai' ? 'סידור מחדש בעזרת AI' : 'שיפור הטיוטה בעזרת AI')) + '</button></div>';
+    if (ai.state === 'login') html += '<p class="hint">כדי להשתמש ב-AI צריך להתחבר מחדש: <a class="linkbtn" href="api/login" style="padding:0">התחברות</a></p>';
+    if (ai.state === 'off') html += '<p class="hint">השיפור בעזרת AI עוד לא הוגדר בשרת.</p>';
+    return html ? '<div class="ai-box">' + html + '</div>' : '';
+  }
+  function runAI(e) {
+    var msg = $('rp-msg');
+    var notes = e.notes.slice().sort(function (a, b) { return a.t - b.t; });
+    var payload = {
+      notes: notes.map(function (n) { return { id: n.id, time: hhmm(n.t), text: n.text.replace(/\d[\d\- ]{3,12}\d/g, function (m) { return m.replace(/\D/g, '').length >= 5 ? '[מספר הוסר]' : m; }) }; }),
+      cases: CASES.map(function (c) { return { id: c.id, title: c.title }; })
+    };
+    ai.busy = true; renderReport(e.id);
+    fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), redirect: 'manual' })
+      .then(function (r) {
+        if (r.type === 'opaqueredirect' || r.status === 401) { ai.state = 'login'; throw new Error('login'); }
+        return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.error || 'error'); return j; }, function () { ai.state = 'login'; throw new Error('login'); });
+      })
+      .then(function (j) { applyAI(e, j.draft || {}, j.model); ai.busy = false; renderReport(e.id); $('rp-msg').textContent = 'הטיוטה סודרה. יש לבדוק אותה לפני שימוש.'; })
+      .catch(function (err) {
+        ai.busy = false; renderReport(e.id);
+        var m = String(err && err.message);
+        $('rp-msg').textContent = m === 'login' ? 'צריך להתחבר מחדש לפני שימוש ב-AI.'
+          : m === 'rate_limited' ? 'הגענו למגבלת השימוש החינמית. כדאי לנסות שוב בעוד דקה.'
+          : m === 'not_configured' ? 'מפתח ה-AI עוד לא הוגדר בשרת.'
+          : !navigator.onLine ? 'אין חיבור לרשת. הטיוטה שבמכשיר נשארה כמו שהיא.'
+          : 'השיפור בעזרת AI נכשל. הטיוטה שבמכשיר נשארה כמו שהיא.';
+      });
+  }
+  function applyAI(e, d, model) {
+    var ids = {}; e.notes.forEach(function (n) { ids[n.id] = 1; });
+    var src = function (a) { return (Array.isArray(a) ? a : []).map(String).filter(function (x) { return ids[x]; }); };
+    var str = function (v) { return typeof v === 'string' ? v.trim() : ''; };
+    var old = e.report || {};
+    var r = { generatedAt: Date.now(), build: document.documentElement.dataset.build, source: 'ai', model: model || '',
+      demo: {}, complaint: '', history: {}, vitals: [], treatments: {}, sources: {}, warnings: [], caseText: old.caseText || '' };
+    var dd = d.demo || {};
+    ['first', 'last', 'age', 'sex', 'hmo'].forEach(function (k) { if (str(dd[k])) { r.demo[k] = str(dd[k]); r.sources['demo.' + k] = []; } });
+    if (e.idnum) r.demo.idnum = e.idnum; // stays on the phone, never sent
+    if (d.complaint && str(d.complaint.text)) { r.complaint = str(d.complaint.text); r.sources.complaint = src(d.complaint.src); }
+    if (d.anamnesis && str(d.anamnesis.text)) { r.history.anamnesis = str(d.anamnesis.text); r.sources['hist.anamnesis'] = src(d.anamnesis.src); }
+    var VK = ['pulse', 'pulseRhythm', 'rr', 'rrQuality', 'bp', 'spo2Air', 'spo2O2', 'spo2', 'glucose', 'temp', 'fast'];
+    (Array.isArray(d.vitals) ? d.vitals : []).forEach(function (v) {
+      var values = {}; VK.forEach(function (k) { if (str(v[k])) values[k] = str(v[k]).replace(/%$/, ''); });
+      if (!Object.keys(values).length) return;
+      var t = /^\d{1,2}:\d{2}$/.test(str(v.time)) ? setTimeOf(e.start, str(v.time)) : e.start;
+      r.vitals.push({ t: t, values: values, src: src(v.src) });
+    });
+    r.vitals.sort(function (a, b) { return a.t - b.t; });
+    var tx = d.treatments || {};
+    ['oxygen', 'dressings', 'meds', 'procedures'].forEach(function (k) { if (tx[k] && str(tx[k].text)) { r.treatments[k] = str(tx[k].text); r.sources['tx.' + k] = src(tx[k].src); } });
+    var cs = d.case || {}, cand = (Array.isArray(cs.candidates) ? cs.candidates : []).map(String).filter(function (id) { return CASE_BY_ID[id]; }).slice(0, 3);
+    if (old.caseId && !old.caseAuto) { r.caseId = old.caseId; r.caseAuto = false; }
+    else if (CASE_BY_ID[str(cs.id)]) { r.caseId = str(cs.id); r.caseAuto = true; }
+    else { r.caseId = ''; r.caseAuto = false; }
+    r.caseSuggestions = (cand.length ? cand : (r.caseId ? [r.caseId] : [])).map(function (id) { return { id: id }; });
+    (Array.isArray(d.warnings) ? d.warnings : []).forEach(function (w) { if (str(w)) r.warnings.push({ field: 'ai', text: str(w) }); });
     e.report = r; e.reportEdited = false; saveEvents();
   }
   // stale = notes changed after the draft, or the draft was made by an earlier version of the app
@@ -972,7 +1061,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       : (k === 'sex'
         ? '<select data-path="' + path + '">' + ['', 'זכר', 'נקבה'].concat(['זכר', 'נקבה'].indexOf(val) === -1 && val ? [val] : []).map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'
         : '<input data-path="' + path + '" value="' + esc(val) + '"' + (k === 'idnum' || k === 'age' ? ' inputmode="numeric"' : '') + '>');
-    var hasSrc = e.report.sources[srcPrefix[sec] + k];
+    var hasSrc = (e.report.sources[srcPrefix[sec] + k] || []).length;
     var lbl = sec === 'history' ? '' : esc(labels[k]);
     if (sec === 'history') input = input.replace('rows="2"', 'rows="5"');
     return '<div class="field"><div class="lbl"><span>' + lbl + '</span><span class="sp"></span>' + (hasSrc ? srcBtn(srcPrefix[sec] + k) : '') + '</div>' + input + '</div>';
@@ -1037,8 +1126,9 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/events">לרשימת האירועים</a></div>'; return; }
     document.title = 'טיוטת דוח · כרטיסיות BLS';
     if (!e.notes.length) { el.innerHTML = '<div class="empty">אין עדיין פתקים באירוע הזה.<br><a class="linkbtn" href="#/event/' + encodeURIComponent(e.id) + '">להוספת פתקים</a></div>'; return; }
-    if (!e.report || (isStale(e) && !e.reportEdited)) generate(e);
-    var r = e.report, html = storageNote();
+    if (!e.report || (isStale(e) && !e.reportEdited && e.report.source !== 'ai')) generate(e);
+    if (ai.state === 'unknown') checkAI(function () { if (currentEventId() === e.id && current === 'v-report' && ai.state !== 'unknown' && ai.state !== 'noserver') renderReport(e.id); });
+    var r = e.report, html = storageNote() + aiBoxHTML(e);
     if (isStale(e)) html += '<div class="notice stale"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>' + (e.report.build !== document.documentElement.dataset.build ? 'האפליקציה עודכנה אחרי הפקת הטיוטה.' : 'נוספו או שונו פתקים אחרי הפקת הטיוטה.') + '</b><br><button class="linkbtn" type="button" id="regen" style="padding:.3rem 0">עדכון הטיוטה מהפתקים</button> (העריכות הידניות יוחלפו)</div></div>';
     if (r.warnings && r.warnings.length) html += '<div class="warns">' + r.warnings.map(function (w) { return '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div>' + esc(w.text) + '</div></div>'; }).join('') + '</div>';
     html += '<p class="privacy" style="margin-top:.9rem">הטיוטה כוללת רק מידע שנכתב בפתקים. שדות שלא תועדו לא מופיעים, ואפשר להוסיף אותם ידנית. כפתור "מקור" מציג את הפתק שממנו נלקח הערך.</p>';
@@ -1046,7 +1136,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     html += caseHTML(e);
     var showC = r.complaint || shown.complaint;
     html += '<section class="rp-sec"><h2>תלונה עיקרית</h2>' + (showC
-      ? '<div class="field"><div class="lbl"><span class="sp"></span>' + (r.sources.complaint ? srcBtn('complaint') : '') + '</div><textarea data-path="complaint" rows="2">' + esc(r.complaint || '') + '</textarea></div>'
+      ? '<div class="field"><div class="lbl"><span class="sp"></span>' + ((r.sources.complaint || []).length ? srcBtn('complaint') : '') + '</div><textarea data-path="complaint" rows="2">' + esc(r.complaint || '') + '</textarea></div>'
       : '<p class="empty-rp">לא נמצאה תלונה מפורשת בפתקים.</p><div class="addf"><button class="btn sm" type="button" id="add-complaint">+ הוספת תלונה עיקרית</button></div>') + '</section>';
     html += sectionHTML('history', 'אנמנזה וסיפור המקרה', e);
     html += '<section class="rp-sec"><h2>בדיקות שבוצעו</h2>' + (r.vitals.length ? r.vitals.map(roundHTML).join('') : '<p class="empty-rp">לא נמצאו מדדים בפתקים.</p>') +
@@ -1077,7 +1167,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var e = getEvent(currentEventId()); if (!e || !e.report) return;
     var t = ev.target;
     if (t.tagName === 'TEXTAREA') autoGrow(t);
-    if (t.hasAttribute('data-path')) { setPath(e.report, t.getAttribute('data-path'), t.value); touched(e); }
+    if (t.hasAttribute('data-path')) { setPath(e.report, t.getAttribute('data-path'), t.value); if (t.getAttribute('data-path') === 'demo.idnum') e.idnum = t.value.trim(); touched(e); }
     if (t.hasAttribute('data-v')) { var p = t.getAttribute('data-v').split('.'); e.report.vitals[+p[0]].values[p[1]] = t.value; touched(e); }
   });
   $('report').addEventListener('change', function (ev) {
@@ -1127,6 +1217,13 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (t.hasAttribute('data-case')) { e.report.caseId = t.getAttribute('data-case'); e.report.caseAuto = false; touched(e); renderReport(e.id); return; }
     switch (t.id) {
       case 'rp-read': readHistory(e); break;
+      case 'ai-run':
+        if (e.reportEdited) confirmBox('לסדר את הטיוטה מחדש בעזרת AI? עריכות ידניות בטיוטה יוחלפו. הפתקים לא ישתנו.', 'סידור').then(function (ok) { if (ok) runAI(e); });
+        else runAI(e);
+        break;
+      case 'ai-undo':
+        confirmBox('לחזור לטיוטה שמחולצת במכשיר מהפתקים?', 'חזרה').then(function (ok) { if (ok) { shown = {}; generate(e); renderReport(e.id); } });
+        break;
       case 'add-round': e.report.vitals.push({ t: Date.now(), values: { pulse: '' }, src: [] }); shown['v' + (e.report.vitals.length - 1) + '.pulse'] = true; touched(e); renderReport(e.id); break;
       case 'add-complaint': shown.complaint = true; renderReport(e.id); var c = $('report').querySelector('[data-path="complaint"]'); if (c) c.focus(); break;
       case 'regen':

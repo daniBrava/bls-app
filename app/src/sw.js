@@ -34,6 +34,7 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.indexOf('/api/') !== -1) return; // server functions always go to the network
   if (req.mode === 'navigate') {
     e.respondWith(caches.match('./index.html', { cacheName: CACHE }).then(function (r) {
       return r || fetch(req);
