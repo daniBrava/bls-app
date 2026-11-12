@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="he-IL" dir="rtl" data-build="__BUILD_ID__" data-built="__BUILD_DATE__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>כרטיסיות BLS</title>
+<meta name="theme-color" content="#f3f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="כרטיסיות BLS">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#f3f4f6; --surface:#ffffff; --text:#0f172a; --muted:#566070; --line:#e2e5ea;
+  --accent:#c24e0a; --accent-fg:#ffffff; --accent-weak:#fdeee4; --brand:#f26b21;
+  --warn-bg:#fff7d6; --warn-fg:#5e4500; --warn-line:#ecd27a; --warn-dot:#c79a00;
+  --ok-bg:#e4f3e8; --ok-fg:#1b5e31; --ok-dot:#2e9a52;
+  --neutral-bg:#eef0f3; --neutral-fg:#3e4756;
+  --mark:#ffe27a; --shadow:0 1px 2px rgba(15,23,42,.06),0 1px 1px rgba(15,23,42,.04);
+  --radius:14px; --sticky-h:0px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1117; --surface:#161b22; --text:#e8edf3; --muted:#9aa5b4; --line:#29313c;
+    --accent:#ff8a3d; --accent-fg:#1f0d00; --accent-weak:#3a2213; --brand:#ff8a3d;
+    --warn-bg:#2e2a12; --warn-fg:#f5e08a; --warn-line:#5c5220; --warn-dot:#e0c33a;
+    --ok-bg:#122e1c; --ok-fg:#8adca3; --ok-dot:#4cc477;
+    --neutral-bg:#222a35; --neutral-fg:#c3cbd6;
+    --mark:#6d5c12; --shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html{font-size:17px; -webkit-text-size-adjust:100%; text-size-adjust:100%}
+html[data-fs="1"]{font-size:15px} html[data-fs="3"]{font-size:19.5px} html[data-fs="4"]{font-size:22px}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Hebrew","Segoe UI","Noto Sans Hebrew","Arial Hebrew",Arial,"DejaVu Sans",sans-serif;
+  line-height:1.55; -webkit-tap-highlight-color:transparent;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.wrap{max-width:720px;margin:0 auto}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- sticky headers ---------- */
+.bar{
+  position:sticky; top:0; z-index:20; background:var(--bg);
+  padding-top:env(safe-area-inset-top);
+  border-bottom:1px solid var(--line);
+}
+.bar-in{padding:.55rem 1rem .6rem}
+.topline{display:flex;align-items:center;gap:.5rem;min-height:2.6rem}
+.app-title .brand{color:var(--brand)}
+.bar::before{content:"";display:block;height:3px;background:var(--brand)}
+.app-title{font-size:1.25rem;font-weight:750;margin:0;flex:1;letter-spacing:-.01em}
+.icon-btn{
+  appearance:none;border:0;background:transparent;border-radius:999px;
+  min-width:2.6rem;height:2.6rem;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--accent);cursor:pointer;padding:0 .5rem;font-weight:650;
+}
+.icon-btn:active{background:var(--accent-weak)}
+.fs-btn{gap:.05rem;align-items:baseline;padding-top:.15rem}.fs-a{font-size:.78em}.fs-b{font-size:1.2em}
+.icon-btn svg{width:1.35rem;height:1.35rem}
+.pill{
+  font-size:.72rem;font-weight:650;border-radius:999px;padding:.2rem .6rem;white-space:nowrap;
+  background:var(--ok-bg);color:var(--ok-fg);border:0;cursor:pointer;
+}
+.pill.off{background:var(--neutral-bg);color:var(--neutral-fg)}
+
+.search{position:relative;margin-top:.45rem}
+.search input{
+  width:100%;font:inherit;font-size:max(16px,1rem);
+  padding:.7rem 2.6rem .7rem 2.6rem;border-radius:12px;border:1px solid var(--line);
+  background:var(--surface);color:var(--text);outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+.search input::-webkit-search-cancel-button{display:none}
+.search .s-ico{position:absolute;inset-inline-start:.8rem;top:50%;transform:translateY(-50%);width:1.1rem;height:1.1rem;color:var(--muted);pointer-events:none}
+.search .clear{position:absolute;inset-inline-end:.25rem;top:50%;transform:translateY(-50%);color:var(--muted)}
+
+.chips{
+  display:flex;gap:.45rem;overflow-x:auto;scrollbar-width:none;
+  margin:.6rem -1rem 0;padding:0 1rem .1rem;scroll-padding-inline:1rem;
+}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  appearance:none;flex:none;border:1px solid var(--line);background:var(--surface);
+  border-radius:999px;padding:.4rem .85rem;font-size:.88rem;font-weight:600;cursor:pointer;white-space:nowrap;
+  min-height:2.25rem;
+}
+.chip .n{color:var(--muted);font-weight:500;margin-inline-start:.3rem;font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.chip[aria-pressed="true"] .n{color:inherit;opacity:.8}
+
+/* ---------- list ---------- */
+main{padding:0 1rem 2rem}
+.notice{
+  margin:.9rem 0 .2rem;padding:.7rem .85rem;border-radius:12px;font-size:.9rem;
+  background:var(--warn-bg);color:var(--warn-fg);border:1px solid var(--warn-line);
+  display:flex;gap:.55rem;align-items:flex-start;
+}
+.notice svg{flex:none;width:1.15rem;height:1.15rem;margin-top:.15rem}
+.notice b{font-weight:700}
+.grp-h{font-size:.82rem;font-weight:700;color:var(--muted);margin:1.3rem .25rem .45rem;letter-spacing:.01em;display:flex;gap:.4rem;align-items:baseline}
+.grp-h .count{font-weight:500}
+.rows{list-style:none;margin:0;padding:0;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
+.rows li+li{border-top:1px solid var(--line)}
+.row{display:flex;gap:.75rem;align-items:center;padding:.8rem .95rem;text-decoration:none;min-height:3.6rem}
+.row:active{background:var(--accent-weak)}
+.row-main{flex:1;min-width:0}
+.row-title{font-weight:650;font-size:1.02rem;line-height:1.35}
+.row-meta{display:flex;flex-wrap:wrap;gap:.3rem .7rem;margin-top:.3rem;font-size:.78rem;color:var(--muted);align-items:center}
+.row-snip{margin-top:.35rem;font-size:.85rem;color:var(--muted);line-height:1.45}
+.row-snip .where{font-weight:650}
+.chev{flex:none;width:1rem;height:1rem;color:var(--muted)}
+.tag{display:inline-block;font-size:.72rem;font-weight:650;border-radius:6px;padding:.05rem .4rem;background:var(--neutral-bg);color:var(--neutral-fg)}
+.st{display:inline-flex;align-items:center;gap:.3rem}
+.st::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--warn-dot);flex:none}
+.st.ok::before{background:var(--ok-dot)}
+.st.unk::before{background:var(--muted)}
+.result-h{font-size:.82rem;font-weight:700;color:var(--muted);margin:1.1rem .25rem .45rem}
+.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
+.empty b{color:var(--text)}
+.linkbtn{appearance:none;border:0;background:none;color:var(--accent);font-weight:650;cursor:pointer;padding:.5rem;text-decoration:underline;text-underline-offset:3px}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 .05em}
+
+/* ---------- card view ---------- */
+.card-top .topline{gap:.25rem}
+.card-top .bar-title{flex:1;min-width:0;font-weight:650;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .15s}
+.card-top.scrolled .bar-title{opacity:1}
+.back{gap:.15rem;padding-inline:.35rem .6rem}
+.jump{margin-top:.35rem}
+.jump .chip{font-size:.8rem;padding:.3rem .7rem;min-height:2rem}
+.jump .chip .num{font-variant-numeric:tabular-nums;font-weight:750;margin-inline-end:.35rem;opacity:.7}
+.card-head{padding:1rem .15rem .2rem}
+.card-head .crumbs{display:flex;gap:.5rem;align-items:center;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
+.card-head h1{font-size:1.5rem;line-height:1.3;margin:.35rem 0 0;font-weight:780;letter-spacing:-.01em}
+.status{margin:1rem 0 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.status-row{display:flex;justify-content:space-between;gap:.75rem;padding:.6rem .9rem;font-size:.88rem;align-items:center}
+.status-row+.status-row{border-top:1px solid var(--line)}
+.status-row .k{color:var(--muted)}
+.badge{font-size:.8rem;font-weight:700;border-radius:999px;padding:.15rem .65rem;background:var(--warn-bg);color:var(--warn-fg);white-space:nowrap}
+.badge.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.badge.unk{background:var(--neutral-bg);color:var(--neutral-fg)}
+.review{padding:.7rem .9rem .8rem;background:var(--warn-bg);color:var(--warn-fg);border-top:1px solid var(--warn-line);font-size:.9rem}
+.review .k{font-weight:750;display:block;margin-bottom:.15rem}
+.sec{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);scroll-margin-top:calc(var(--sticky-h) + .6rem)}
+.sec h2{display:flex;gap:.6rem;align-items:center;margin:0;padding:.75rem .9rem .5rem;font-size:1.05rem;font-weight:750;line-height:1.35}
+.sec h2 .num{
+  flex:none;width:1.75rem;height:1.75rem;border-radius:50%;background:var(--accent);color:var(--accent-fg);
+  display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;font-variant-numeric:tabular-nums;
+}
+.sec ul{margin:0;padding:0 .9rem .8rem;list-style:none}
+.sec li{position:relative;padding:.45rem 1.05rem .45rem 0;border-top:1px solid var(--line)}
+.sec li:first-child{border-top:0}
+.sec li::before{content:"";position:absolute;inset-inline-start:.15rem;top:1.05em;width:.38rem;height:.38rem;border-radius:50%;background:var(--accent);opacity:.75}
+.sec li.solo{padding-inline-start:0}
+.sec li.solo::before{display:none}
+.sec li strong{font-weight:720}
+.meta{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem .9rem;font-size:.88rem;box-shadow:var(--shadow)}
+.meta h2{font-size:.95rem;margin:0 0 .4rem}
+.meta ul{margin:0;padding:0;list-style:none}
+.meta li{padding:.35rem 0;border-top:1px solid var(--line)}
+.meta li:first-child{border-top:0}
+.meta .loc{color:var(--muted);display:block;font-size:.82rem}
+.meta a{color:var(--accent);font-weight:650;text-underline-offset:3px;word-break:break-word}
+.meta .muted{color:var(--muted)}
+.meta dl{display:grid;grid-template-columns:auto 1fr;gap:.25rem .8rem;margin:.6rem 0 0;padding-top:.6rem;border-top:1px solid var(--line)}
+.meta dt{color:var(--muted)} .meta dd{margin:0}
+.meta code{font-family:ui-monospace,Menlo,monospace;font-size:.85em;direction:ltr;unicode-bidi:isolate}
+.disclaimer{color:var(--muted);font-size:.8rem;text-align:center;margin:1.2rem .5rem 0}
+
+/* ---------- about ---------- */
+.panel{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.85rem .95rem;box-shadow:var(--shadow)}
+.panel h2{font-size:1.02rem;margin:0 0 .5rem}
+.panel p{margin:.4rem 0}
+.panel ol{margin:.2rem 0;padding-inline-start:1.3rem}
+.panel ol li{padding:.15rem 0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem .9rem;font-size:.9rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.rev-list{list-style:none;margin:.3rem 0 0;padding:0}
+.rev-list li{padding:.55rem 0;border-top:1px solid var(--line);font-size:.9rem}
+.rev-list li:first-child{border-top:0}
+.rev-list a{font-weight:650;color:var(--accent);text-decoration:none}
+.rev-list .st{font-size:.78rem;color:var(--muted);margin-inline-start:.4rem}
+.rev-list p{margin:.2rem 0 0;color:var(--muted)}
+
+.toast{
+  position:fixed;inset-inline:1rem;bottom:calc(1rem + env(safe-area-inset-bottom));z-index:50;max-width:520px;margin:0 auto;
+  background:var(--text);color:var(--bg);border-radius:12px;padding:.75rem .9rem;display:flex;gap:.75rem;align-items:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:.9rem;
+}
+.toast button{appearance:none;border:0;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:.45rem .8rem;cursor:pointer}
+.toast span{flex:1}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* ---------- tab bar ---------- */
+body{padding-bottom:calc(4.2rem + env(safe-area-inset-bottom))}
+body.typing .tabs{display:none}
+body.typing{padding-bottom:env(safe-area-inset-bottom)}
+.tabs{
+  position:fixed;inset-inline:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);
+  display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);
+}
+.tabs a{flex:1;max-width:260px;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:.45rem 0 .5rem;
+  text-decoration:none;color:var(--muted);font-size:.74rem;font-weight:650}
+.tabs a svg{width:1.45rem;height:1.45rem}
+.tabs a[aria-current="page"]{color:var(--accent)}
+
+/* ---------- buttons / forms ---------- */
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:12px;
+  padding:.7rem 1rem;font:inherit;font-weight:700;cursor:pointer;min-height:2.9rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{color:#b42318}
+@media (prefers-color-scheme: dark){.btn.danger{color:#ff8a80}}
+.btn.block{width:100%}
+.btn:active{filter:brightness(.95)}
+.btn.sm{min-height:2.3rem;padding:.35rem .75rem;font-size:.85rem;border-radius:10px}
+textarea,.field input,.field select{
+  width:100%;font:inherit;font-size:max(16px,1rem);color:var(--text);background:var(--surface);
+  border:1px solid var(--line);border-radius:12px;padding:.6rem .75rem;outline:none;-webkit-appearance:none;appearance:none;
+}
+textarea:focus,.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
+
+/* ---------- events ---------- */
+.privacy{font-size:.82rem;color:var(--muted);margin:.8rem .2rem 0}
+.ev-row .row-title{font-variant-numeric:tabular-nums}
+.composer{margin-top:.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.7rem;box-shadow:var(--shadow)}
+.composer textarea{border:0;padding:.3rem .2rem;box-shadow:none!important;min-height:4.6rem}
+.composer .tools{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
+.composer .chips{margin:0;padding:0;flex:1}
+.composer .chips .chip{font-size:.8rem;padding:.25rem .65rem;min-height:2rem}
+.hint{font-size:.78rem;color:var(--muted);margin:.45rem .2rem 0}
+.notes{list-style:none;margin:1rem 0 0;padding:0}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;margin-bottom:.5rem;box-shadow:var(--shadow);cursor:pointer}
+.note .tm{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:650}
+.note .tx{white-space:pre-wrap;margin-top:.1rem;word-break:break-word}
+.note.editing{cursor:default;border-color:var(--accent)}
+.note .edit-tools{display:flex;gap:.5rem;margin-top:.55rem;flex-wrap:wrap;align-items:center}
+.note input[type=time]{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:.35rem .5rem;background:var(--surface);color:var(--text)}
+.ev-actions{display:flex;gap:.6rem;margin-top:1rem}
+.ev-actions .btn{flex:1}
+.count-line{font-size:.82rem;color:var(--muted);margin:1rem .2rem 0}
+
+/* ---------- report editor ---------- */
+.rp-sec{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.3rem .9rem .8rem;box-shadow:var(--shadow)}
+.rp-sec>h2{font-size:1.02rem;margin:.6rem 0 .3rem;display:flex;align-items:center;gap:.5rem}
+.field{padding:.45rem 0}
+.field+.field{border-top:1px solid var(--line)}
+.field .lbl{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--muted);font-weight:650;margin-bottom:.3rem}
+.field .lbl .sp{flex:1}
+.srcbtn{appearance:none;border:0;background:var(--accent-weak);color:var(--accent);font-size:.72rem;font-weight:700;border-radius:999px;padding:.12rem .55rem;cursor:pointer}
+.srcbox{margin-top:.4rem;font-size:.82rem;background:var(--bg);border-radius:10px;padding:.45rem .6rem;color:var(--muted)}
+.srcbox div+div{margin-top:.3rem;padding-top:.3rem;border-top:1px dashed var(--line)}
+.srcbox b{color:var(--text);font-variant-numeric:tabular-nums}
+.addf{margin-top:.5rem}
+.addf select{width:auto;font-size:.88rem;padding:.4rem 2rem .4rem .7rem;border-radius:10px;color:var(--accent);font-weight:650;border-style:dashed;
+  background-image:none}
+.round{border:1px solid var(--line);border-radius:12px;padding:.55rem .7rem;margin-top:.6rem}
+.round-h{display:flex;align-items:center;gap:.5rem}
+.round-h input[type=time]{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:.3rem .5rem;background:var(--surface);color:var(--text);font-weight:700}
+.round-h .sp{flex:1}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem .6rem;margin-top:.5rem}
+.vgrid .field{padding:0;border:0!important}
+.vgrid .field.wide{grid-column:1/-1}
+.vgrid .lbl{margin-bottom:.15rem}
+.vgrid input,.vgrid select{padding:.45rem .6rem}
+.warns{margin-top:1rem}
+.warns .notice{margin:0 0 .5rem}
+.empty-rp{color:var(--muted);font-size:.9rem;margin:.3rem 0}
+.rp-actions{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem}
+.rp-actions .wide{grid-column:1/-1}
+pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem;margin:1rem 0 0;line-height:1.6}
+.stale{margin-top:1rem}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;padding:1rem;padding-bottom:calc(1rem + env(safe-area-inset-bottom))}
+.modal .box{background:var(--surface);border-radius:16px;padding:1.1rem;max-width:480px;width:100%}
+.modal p{margin:0 0 1rem}
+.modal .acts{display:flex;gap:.6rem}
+.modal .acts .btn{flex:1}
+</style>
+</head>
+<body>
+<script id="cards-data" type="application/json">__CARDS_JSON__</script>
+<script id="cases-data" type="application/json">__CASES_JSON__</script>
+<script>/*__EXTRACT_JS__*/</script>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" opacity=".18"/><path d="M8.5 8.5l7 7m0-7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5 2.8 19.5h18.4L12 3.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-cards" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8.5h8M8 12h8M8 15.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4.5h10l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 19V6a1.5 1.5 0 0 1 1-1.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 11h8M8 15h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<!-- ===== List view ===== -->
+<div id="v-list">
+  <header class="bar"><div class="wrap bar-in">
+    <div class="topline">
+      <h1 class="app-title">כרטיסיות <span class="brand">BLS</span></h1>
+      <button class="pill" id="net-pill" hidden></button>
+      <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button>
+      <a class="icon-btn" href="#/about" aria-label="מידע וסטטוס אימות"><svg><use href="#i-info"/></svg></a>
+    </div>
+    <div class="search" role="search">
+      <svg class="s-ico" aria-hidden="true"><use href="#i-search"/></svg>
+      <label class="sr" for="q">חיפוש כרטיסייה לפי שם או נושא</label>
+      <input id="q" type="search" placeholder="חיפוש לפי שם או נושא" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+      <button class="icon-btn clear" id="q-clear" type="button" aria-label="ניקוי החיפוש" hidden><svg><use href="#i-x"/></svg></button>
+    </div>
+    <nav class="chips" id="cats" aria-label="קטגוריות"></nav>
+  </div></header>
+  <main class="wrap">
+    <div id="ops-notice"></div>
+    <p class="sr" id="live" aria-live="polite"></p>
+    <div id="list"></div>
+  </main>
+</div>
+
+<!-- ===== Card view ===== -->
+<div id="v-card" hidden>
+  <header class="bar card-top" id="card-bar"><div class="wrap bar-in">
+    <div class="topline">
+      <button class="icon-btn back" id="back" type="button"><svg><use href="#i-chev-r"/></svg>כרטיסיות</button>
+      <div class="bar-title" id="bar-title" aria-hidden="true"></div>
+      <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button>
+    </div>
+    <nav class="chips jump" id="jump" aria-label="מעבר לסעיף"></nav>
+  </div></header>
+  <main class="wrap" id="card"></main>
+</div>
+
+<!-- ===== About view ===== -->
+<div id="v-about" hidden>
+  <header class="bar"><div class="wrap bar-in">
+    <div class="topline">
+      <button class="icon-btn back" id="back2" type="button"><svg><use href="#i-chev-r"/></svg>כרטיסיות</button>
+      <div class="bar-title" style="opacity:1">מידע וסטטוס אימות</div>
+    </div>
+  </div></header>
+  <main class="wrap" id="about"></main>
+</div>
+
+<!-- ===== Events list ===== -->
+<div id="v-events" hidden>
+  <header class="bar"><div class="wrap bar-in">
+    <div class="topline"><h1 class="app-title">תיעוד אירוע</h1>
+      <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button></div>
+  </div></header>
+  <main class="wrap" id="events"></main>
+</div>
+
+<!-- ===== Event notes ===== -->
+<div id="v-event" hidden>
+  <header class="bar"><div class="wrap bar-in">
+    <div class="topline">
+      <button class="icon-btn back" type="button" data-back="#/events"><svg><use href="#i-chev-r"/></svg>אירועים</button>
+      <div class="bar-title" style="opacity:1" id="ev-title"></div>
+      <button class="icon-btn" type="button" id="ev-del" aria-label="מחיקת האירוע"><svg><use href="#i-trash"/></svg></button>
+    </div>
+  </div></header>
+  <main class="wrap" id="event"></main>
+</div>
+
+<!-- ===== Report draft ===== -->
+<div id="v-report" hidden>
+  <header class="bar"><div class="wrap bar-in">
+    <div class="topline">
+      <button class="icon-btn back" type="button" id="rp-back"><svg><use href="#i-chev-r"/></svg>פתקים</button>
+      <div class="bar-title" style="opacity:1">טיוטת דוח</div>
+      <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button>
+    </div>
+  </div></header>
+  <main class="wrap" id="report"></main>
+</div>
+
+<nav class="tabs" id="tabs" aria-label="ניווט ראשי">
+  <a href="#/" data-tab="cards"><svg aria-hidden="true"><use href="#i-cards"/></svg>כרטיסיות</a>
+  <a href="#/events" data-tab="events"><svg aria-hidden="true"><use href="#i-note"/></svg>תיעוד אירוע</a>
+</nav>
+<div class="modal" id="modal" hidden><div class="box" role="dialog" aria-modal="true"><p id="modal-msg"></p><div class="acts"><button class="btn" type="button" id="modal-no">ביטול</button><button class="btn primary" type="button" id="modal-yes">אישור</button></div></div></div>
+
+<div class="toast" id="toast" role="status" hidden><span>גרסה חדשה של הכרטיסיות זמינה.</span><button type="button" id="toast-btn">רענון</button></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- data ---------- */
+  var DATA = JSON.parse(document.getElementById('cards-data').textContent);
+  var CARDS = Array.isArray(DATA.cards) ? DATA.cards : [];
+  document.documentElement.dir = DATA.direction || 'rtl';
+  document.documentElement.lang = DATA.locale || 'he-IL';
+
+  var EDITORIAL = {
+    approved: { label: 'אושרה בפרויקט', short: 'עריכה: אושרה', tone: 'ok' },
+    review_required: { label: 'ממתינה להכרעה בפרויקט', short: 'עריכה: ממתינה להכרעה', tone: 'warn' }
+  };
+  // Only an explicit approved/verified value is ever shown as operationally verified.
+  var OPERATIONAL = {
+    approved: { label: 'אומתה לשימוש מבצעי', short: 'מבצעי: אומתה', tone: 'ok' },
+    verified: { label: 'אומתה לשימוש מבצעי', short: 'מבצעי: אומתה', tone: 'ok' },
+    review_required: { label: 'טרם אומתה לשימוש מבצעי', short: 'מבצעי: טרם אומתה', tone: 'warn' }
+  };
+  var KIND = { clinical: 'מצב קליני', procedure: 'נוהל' };
+  var PROVENANCE = { authored_in_chat: 'נוסחה בשיחה', user_supplied: 'הועברה על ידי המשתמש' };
+  var REVIEW_PRIORITY = ['איחוד הצלה', 'מד״א', 'משרד הבריאות', 'ארגון הבריאות העולמי (WHO)'];
+
+  function statusOf(map, value, kindLabel) {
+    return map[value] || { label: kindLabel + ': ' + String(value || 'לא צוין'), short: kindLabel + ': ' + String(value || 'לא צוין'), tone: 'unk' };
+  }
+  function opStatus(c) { return statusOf(OPERATIONAL, c.operational_status, 'מבצעי'); }
+  function edStatus(c) { return statusOf(EDITORIAL, c.editorial_status, 'עריכה'); }
+
+  /* ---------- text helpers ---------- */
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  var FINALS = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+  var RE_MARK = /[֑-ֽֿ-ׇ̀-ͯ]/;
+  var RE_QUOTE = /["'`׳״‘’“”]/;
+  var RE_WORD = /[\p{L}\p{N}]/u;
+  // Normalise for matching (niqqud, geresh/gershayim, final letters, maqaf, case) while
+  // keeping a map back to the original string so matches can be highlighted in place.
+  function normMap(str) {
+    var out = '', map = [];
+    str = String(str || '');
+    for (var i = 0; i < str.length; i++) {
+      var parts = str[i].normalize('NFKD');
+      for (var j = 0; j < parts.length; j++) {
+        var c = parts[j], o;
+        if (RE_MARK.test(c) || RE_QUOTE.test(c)) continue;
+        if (FINALS[c]) o = FINALS[c];
+        else if (RE_WORD.test(c)) o = c.toLowerCase();
+        else o = ' ';
+        if (o === ' ' && (out === '' || out[out.length - 1] === ' ')) continue;
+        out += o; map.push(i);
+      }
+    }
+    return { out: out, map: map };
+  }
+  function norm(s) { return normMap(s).out.trim(); }
+  function tokenize(q) { var n = norm(q); return n ? n.split(' ') : []; }
+
+  function ranges(text, tokens) {
+    if (!tokens.length) return [];
+    var nm = normMap(text), r = [];
+    tokens.forEach(function (t) {
+      var from = 0, k;
+      while ((k = nm.out.indexOf(t, from)) !== -1) {
+        r.push([nm.map[k], nm.map[k + t.length - 1] + 1]);
+        from = k + t.length;
+      }
+    });
+    r.sort(function (a, b) { return a[0] - b[0]; });
+    var m = [];
+    r.forEach(function (x) { if (m.length && x[0] <= m[m.length - 1][1]) m[m.length - 1][1] = Math.max(m[m.length - 1][1], x[1]); else m.push(x.slice()); });
+    return m;
+  }
+  // Escaped HTML of text[start,end) with search matches wrapped in <mark>.
+  function hl(text, tokens, start, end) {
+    text = String(text); start = start || 0; end = end == null ? text.length : end;
+    var rs = ranges(text, tokens), html = '', pos = start;
+    rs.forEach(function (x) {
+      var a = Math.max(x[0], start), b = Math.min(x[1], end);
+      if (b <= a) return;
+      html += esc(text.slice(pos, a)) + '<mark>' + esc(text.slice(a, b)) + '</mark>';
+      pos = b;
+    });
+    return html + esc(text.slice(pos, end));
+  }
+  function snippet(text, tokens, max) {
+    text = String(text);
+    if (text.length <= max) return hl(text, tokens);
+    var rs = ranges(text, tokens), first = rs.length ? rs[0][0] : 0;
+    var s = Math.max(0, first - 35), e = Math.min(text.length, s + max);
+    if (e - s < max) s = Math.max(0, e - max);
+    return (s > 0 ? '…' : '') + hl(text, tokens, s, e) + (e < text.length ? '…' : '');
+  }
+  // Presentation only: bold a short "label:" lead-in. The text itself is unchanged.
+  function itemHTML(text, tokens) {
+    text = String(text);
+    var i = text.indexOf(':');
+    if (i > 0 && i <= 30 && !/["״“”]/.test(text.slice(0, i))) {
+      return '<strong>' + hl(text, tokens, 0, i + 1) + '</strong>' + hl(text, tokens, i + 1);
+    }
+    return hl(text, tokens);
+  }
+
+  /* ---------- index ---------- */
+  var byId = {};
+  var GROUPS = [];
+  var IDX = CARDS.map(function (c, order) {
+    byId[c.id] = c;
+    if (GROUPS.indexOf(c.group) === -1) GROUPS.push(c.group);
+    var content = [];
+    (c.sections || []).forEach(function (s) {
+      content.push({ sec: s, text: s.title, n: norm(s.title) });
+      (s.items || []).forEach(function (t) { content.push({ sec: s, text: t, n: norm(t) }); });
+    });
+    return {
+      card: c, order: order,
+      title: norm(c.title),
+      meta: norm([c.title, c.group, String(c.id).replace(/-/g, ' '), KIND[c.kind] || ''].join(' ')),
+      content: content,
+      contentAll: content.map(function (x) { return x.n; }).join(' ')
+    };
+  });
+
+  function scoreMeta(x, tokens, nq) {
+    for (var i = 0; i < tokens.length; i++) if (x.meta.indexOf(tokens[i]) === -1) return 0;
+    if (x.title.indexOf(nq) === 0) return 100;
+    if (x.title.indexOf(nq) !== -1) return 80;
+    var allTitle = tokens.every(function (t) { return x.title.indexOf(t) !== -1; });
+    return allTitle ? 60 : 40;
+  }
+  function contentHit(x, tokens) {
+    for (var i = 0; i < tokens.length; i++) if (x.contentAll.indexOf(tokens[i]) === -1) return null;
+    var best = null, bestN = 0;
+    x.content.forEach(function (it) {
+      var n = tokens.filter(function (t) { return it.n.indexOf(t) !== -1; }).length;
+      if (n > bestN) { best = it; bestN = n; }
+    });
+    return best;
+  }
+
+  /* ---------- state & prefs ---------- */
+  var state = { q: '', group: '', listScroll: 0, inApp: false };
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  var fs = parseInt(store('bls.fs'), 10) || 2;
+  function applyFs() { document.documentElement.setAttribute('data-fs', String(fs)); measureSticky(); }
+  document.querySelectorAll('.fs-btn').forEach(function (b) {
+    b.addEventListener('click', function () { fs = fs >= 4 ? 1 : fs + 1; store('bls.fs', String(fs)); applyFs(); });
+  });
+
+  var $ = function (id) { return document.getElementById(id); };
+  var qEl = $('q'), listEl = $('list'), catsEl = $('cats');
+
+  /* ---------- list ---------- */
+  function renderCats() {
+    var counts = {};
+    CARDS.forEach(function (c) { counts[c.group] = (counts[c.group] || 0) + 1; });
+    var html = '<button class="chip" type="button" data-g="" aria-pressed="' + (!state.group) + '">הכל<span class="n">' + CARDS.length + '</span></button>';
+    GROUPS.forEach(function (g) {
+      html += '<button class="chip" type="button" data-g="' + esc(g) + '" aria-pressed="' + (state.group === g) + '">' + esc(g) + '<span class="n">' + counts[g] + '</span></button>';
+    });
+    catsEl.innerHTML = html;
+  }
+  catsEl.addEventListener('click', function (e) {
+    var b = e.target.closest('.chip'); if (!b) return;
+    state.group = b.getAttribute('data-g');
+    renderCats(); renderList(); window.scrollTo(0, 0);
+    var on = catsEl.querySelector('[aria-pressed="true"]');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
+
+  function renderNotice() {
+    var verified = CARDS.filter(function (c) { return opStatus(c).tone === 'ok'; }).length;
+    var html;
+    if (verified === 0) {
+      html = '<b>אף כרטיסייה טרם אומתה לשימוש מבצעי.</b>';
+    } else if (verified < CARDS.length) {
+      html = '<b>' + verified + ' מתוך ' + CARDS.length + ' כרטיסיות אומתו לשימוש מבצעי.</b> כרטיסיות אחרות מסומנות כממתינות לאימות.';
+    } else { $('ops-notice').innerHTML = ''; return; }
+    $('ops-notice').innerHTML = '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div>' + html + ' <a href="#/about">פרטים</a></div></div>';
+  }
+
+  function statusLine(c) {
+    var o = opStatus(c), d = edStatus(c);
+    return '<span class="st ' + o.tone + '">' + esc(o.short) + '</span><span class="st ' + d.tone + '">' + esc(d.short) + '</span>';
+  }
+  function rowHTML(c, tokens, showGroup, hit) {
+    var meta = '';
+    if (showGroup) meta += '<span>' + hl(c.group, tokens) + '</span>';
+    if (c.kind === 'procedure') meta += '<span class="tag">' + esc(KIND.procedure) + '</span>';
+    meta += statusLine(c);
+    var snip = '';
+    if (hit) {
+      var where = hit.text === hit.sec.title ? 'כותרת סעיף' : hit.sec.title;
+      snip = '<div class="row-snip"><span class="where">' + esc(where) + ':</span> ' + snippet(hit.text, tokens, 110) + '</div>';
+    }
+    return '<li><a class="row" href="#/card/' + encodeURIComponent(c.id) + '"><div class="row-main"><div class="row-title">' +
+      hl(c.title, tokens) + '</div><div class="row-meta">' + meta + '</div>' + snip +
+      '</div><svg class="chev" aria-hidden="true"><use href="#i-chev-l"/></svg></a></li>';
+  }
+
+  function renderList() {
+    var tokens = tokenize(state.q), nq = norm(state.q);
+    var pool = IDX.filter(function (x) { return !state.group || x.card.group === state.group; });
+    var html = '', live = '';
+    $('q-clear').hidden = !state.q;
+    $('ops-notice').hidden = !!tokens.length;
+    if (!tokens.length) {
+      (state.group ? [state.group] : GROUPS).forEach(function (g) {
+        var items = pool.filter(function (x) { return x.card.group === g; });
+        if (!items.length) return;
+        html += '<section><h2 class="grp-h">' + esc(g) + '<span class="count">' + items.length + '</span></h2><ul class="rows">' +
+          items.map(function (x) { return rowHTML(x.card, [], false); }).join('') + '</ul></section>';
+      });
+      live = pool.length + ' כרטיסיות';
+    } else {
+      var primary = [], secondary = [];
+      pool.forEach(function (x) {
+        var s = scoreMeta(x, tokens, nq);
+        if (s) primary.push({ s: s, x: x });
+        else { var h = contentHit(x, tokens); if (h) secondary.push({ x: x, h: h }); }
+      });
+      primary.sort(function (a, b) { return b.s - a.s || a.x.order - b.x.order; });
+      if (primary.length) {
+        html += '<h2 class="result-h">לפי שם ונושא · ' + primary.length + '</h2><ul class="rows">' +
+          primary.map(function (p) { return rowHTML(p.x.card, tokens, true); }).join('') + '</ul>';
+      }
+      if (secondary.length) {
+        html += '<h2 class="result-h">מופיע בתוכן הכרטיסייה · ' + secondary.length + '</h2><ul class="rows">' +
+          secondary.map(function (p) { return rowHTML(p.x.card, tokens, true, p.h); }).join('') + '</ul>';
+      }
+      if (!primary.length && !secondary.length) {
+        html = '<div class="empty">לא נמצאו כרטיסיות עבור <b>' + esc(state.q) + '</b>' +
+          (state.group ? '<br>בקטגוריה ' + esc(state.group) + '.<br><button class="linkbtn" type="button" id="all-cats">חיפוש בכל הקטגוריות</button>' : '') + '</div>';
+      }
+      live = (primary.length + secondary.length) + ' תוצאות';
+    }
+    listEl.innerHTML = html;
+    $('live').textContent = live;
+    var ac = $('all-cats');
+    if (ac) ac.addEventListener('click', function () { state.group = ''; renderCats(); renderList(); });
+  }
+
+  var qTimer;
+  qEl.addEventListener('input', function () {
+    clearTimeout(qTimer);
+    qTimer = setTimeout(function () { state.q = qEl.value; renderList(); window.scrollTo(0, 0); }, 60);
+  });
+  qEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      qEl.blur();
+      var first = listEl.querySelector('a.row');
+      if (first && listEl.querySelectorAll('a.row').length === 1) location.hash = first.getAttribute('href');
+    }
+    if (e.key === 'Escape') { qEl.value = ''; state.q = ''; renderList(); }
+  });
+  $('q-clear').addEventListener('click', function () { qEl.value = ''; state.q = ''; renderList(); qEl.focus(); });
+
+  /* ---------- card ---------- */
+  function renderCard(id) {
+    var c = byId[id], el = $('card');
+    if (!c) {
+      $('bar-title').textContent = '';
+      $('jump').innerHTML = '';
+      el.innerHTML = '<div class="empty">הכרטיסייה <b><code>' + esc(id) + '</code></b> לא נמצאה בקובץ.<br><a class="linkbtn" href="#/">לרשימת הכרטיסיות</a></div>';
+      return;
+    }
+    document.title = c.title + ' · כרטיסיות BLS';
+    var tokens = tokenize(state.q);
+    var o = opStatus(c), d = edStatus(c);
+    var html = '<div class="card-head"><div class="crumbs"><span>' + esc(c.group) + '</span>' +
+      (KIND[c.kind] ? '<span class="tag">' + esc(KIND[c.kind]) + '</span>' : '') + '</div><h1>' + esc(c.title) + '</h1></div>';
+
+    html += '<section class="status" aria-label="סטטוס אימות">' +
+      '<div class="status-row"><span class="k">סטטוס מבצעי</span><span class="badge ' + o.tone + '">' + esc(o.label) + '</span></div>' +
+      '<div class="status-row"><span class="k">סטטוס עריכה</span><span class="badge ' + d.tone + '">' + esc(d.label) + '</span></div>' +
+      (c.review_needed ? '<div class="review"><span class="k">הערות בדיקה</span>' + esc(c.review_needed) + '</div>' : '') +
+      '</section>';
+
+    var jump = '';
+    (c.sections || []).forEach(function (s, i) {
+      var items = s.items || [];
+      html += '<section class="sec" id="sec-' + i + '"><h2><span class="num">' + esc(s.number) + '</span><span>' + hl(s.title, tokens) + '</span></h2><ul>' +
+        items.map(function (t) { return '<li' + (items.length === 1 ? ' class="solo"' : '') + '>' + itemHTML(t, tokens) + '</li>'; }).join('') +
+        '</ul></section>';
+      jump += '<button class="chip" type="button" data-sec="' + i + '"><span class="num">' + esc(s.number) + '</span>' + esc(s.title) + '</button>';
+    });
+
+    var src = c.sources || [];
+    html += '<section class="meta"><h2>מקורות</h2>';
+    if (src.length) {
+      html += '<ul>' + src.map(function (s) {
+        var t = esc(s.title || s.url || 'מקור');
+        var link = s.url ? '<a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + t + '</a>' : t;
+        return '<li>' + link + (s.locator ? '<span class="loc">' + esc(s.locator) + '</span>' : '') + '</li>';
+      }).join('') + '</ul>';
+    } else {
+      html += '<p class="muted" style="margin:0">' + (c.provenance === 'user_supplied' ? 'לא נמסרו אסמכתאות לכרטיסייה זו.' : 'לא רשומים מקורות לכרטיסייה זו בקובץ.') + '</p>';
+    }
+    html += '<dl><dt>מקור התוכן</dt><dd>' + esc(PROVENANCE[c.provenance] || c.provenance || 'לא צוין') + '</dd>' +
+      '<dt>מזהה</dt><dd><code>' + esc(c.id) + '</code></dd></dl></section>';
+    html += '<p class="disclaimer">התוכן מוצג כפי שהוא בקובץ הכרטיסיות, ללא שינוי.</p>';
+
+    el.innerHTML = html;
+    $('jump').innerHTML = jump;
+    $('bar-title').textContent = c.title;
+  }
+  $('jump').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sec]'); if (!b) return;
+    var t = $('sec-' + b.getAttribute('data-sec'));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  /* ---------- about ---------- */
+  function renderAbout() {
+    document.title = 'מידע וסטטוס אימות · כרטיסיות BLS';
+    function tally(fn) {
+      var m = {}; CARDS.forEach(function (c) { var s = fn(c).label; m[s] = (m[s] || 0) + 1; });
+      return Object.keys(m).map(function (k) { return esc(k) + ': ' + m[k]; }).join('<br>');
+    }
+    var root = document.documentElement;
+    var html = '<section class="panel"><h2>מצב האימות</h2><dl class="kv">' +
+      '<dt>כרטיסיות</dt><dd>' + CARDS.length + '</dd>' +
+      '<dt>מבצעי</dt><dd>' + tally(opStatus) + '</dd>' +
+      '<dt>עריכה</dt><dd>' + tally(edStatus) + '</dd></dl>' +
+      '<p style="font-size:.88rem;color:var(--muted)">כרטיסייה תוצג כמאומתת לשימוש מבצעי רק לאחר שהגורם המוסמך אישר אותה והסטטוס עודכן בקובץ. האפליקציה אינה משנה תוכן רפואי או סטטוס אישור.</p></section>';
+
+    html += '<section class="panel"><h2>סדר עדיפות לבדיקה מקצועית</h2><ol>' +
+      REVIEW_PRIORITY.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ol></section>';
+
+    html += '<section class="panel"><h2>הערות בדיקה לפי כרטיסייה</h2><ul class="rev-list">' + CARDS.map(function (c) {
+      return '<li><a href="#/card/' + encodeURIComponent(c.id) + '">' + esc(c.title) + '</a><span class="st ' + edStatus(c).tone + '">' + esc(edStatus(c).short) + '</span>' +
+        (c.review_needed ? '<p>' + esc(c.review_needed) + '</p>' : '') + '</li>';
+    }).join('') + '</ul></section>';
+
+    html += '<section class="panel"><h2>הקובץ והגרסה</h2><dl class="kv">' +
+      '<dt>קהל יעד</dt><dd>' + esc(DATA.intended_audience || '—') + '</dd>' +
+      '<dt>שפה</dt><dd><code>' + esc(DATA.locale || '') + '</code></dd>' +
+      '<dt>גרסת סכמה</dt><dd>' + esc(DATA.schema_version != null ? DATA.schema_version : '—') + '</dd>' +
+      '<dt>גרסת בנייה</dt><dd><code>' + esc(root.dataset.build) + '</code> · ' + esc(root.dataset.built) + '</dd>' +
+      '<dt>ללא רשת</dt><dd id="offline-state">' + offlineText() + '</dd></dl></section>';
+    $('about').innerHTML = html;
+  }
+
+  /* ---------- offline ---------- */
+  var swReady = false, swReg = null, wantReload = false;
+  function offlineText() {
+    if (swReady) return 'הכרטיסיות שמורות במכשיר וזמינות גם ללא אינטרנט.';
+    if (!('serviceWorker' in navigator)) return 'הדפדפן אינו תומך בשמירה לשימוש ללא רשת.';
+    return 'השמירה לשימוש ללא רשת פעילה רק כשהאפליקציה נטענת מכתובת HTTPS.';
+  }
+  function updateNet() {
+    var p = $('net-pill');
+    if (!navigator.onLine) { p.hidden = false; p.className = 'pill off'; p.textContent = 'ללא רשת · זמין'; }
+    else if (swReady) { p.hidden = false; p.className = 'pill'; p.textContent = 'זמין ללא רשת'; }
+    else p.hidden = true;
+    var s = $('offline-state'); if (s) s.textContent = offlineText();
+  }
+  $('net-pill').addEventListener('click', function () { location.hash = '#/about'; });
+  window.addEventListener('online', updateNet);
+  window.addEventListener('offline', updateNet);
+  try {
+    var secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if ('serviceWorker' in navigator && secure) {
+      navigator.serviceWorker.register('sw.js').then(function (reg) {
+        swReg = reg;
+        navigator.serviceWorker.ready.then(function () { swReady = true; updateNet(); });
+        if (reg.waiting && navigator.serviceWorker.controller) $('toast').hidden = false;
+        reg.addEventListener('updatefound', function () {
+          var nw = reg.installing;
+          if (nw) nw.addEventListener('statechange', function () {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) $('toast').hidden = false;
+          });
+        });
+      }).catch(function () { updateNet(); });
+      navigator.serviceWorker.addEventListener('controllerchange', function () { if (wantReload) location.reload(); });
+    }
+  } catch (e) { /* preview contexts without service workers */ }
+  $('toast-btn').addEventListener('click', function () {
+    wantReload = true;
+    if (swReg && swReg.waiting) swReg.waiting.postMessage('skipWaiting'); else location.reload();
+  });
+
+  /* =====================================================================
+     Event documentation
+     ===================================================================== */
+  var X = window.BLSExtract;
+  var CASES = (function () { try { var c = JSON.parse(document.getElementById('cases-data').textContent); return Array.isArray(c) ? c : (c && c.cases) || []; } catch (e) { return []; } })();
+  var CASE_BY_ID = {}; CASES.forEach(function (c) { CASE_BY_ID[c.id] = c; });
+
+  var EV_KEY = 'bls.events.v1';
+  var memEvents = null, storageOk = true;
+  function loadEvents() {
+    if (memEvents) return memEvents;
+    try { memEvents = JSON.parse(localStorage.getItem(EV_KEY) || '[]'); } catch (e) { memEvents = []; storageOk = false; }
+    return memEvents;
+  }
+  function saveEvents() {
+    try { localStorage.setItem(EV_KEY, JSON.stringify(memEvents)); storageOk = true; } catch (e) { storageOk = false; }
+  }
+  function getEvent(id) { return loadEvents().filter(function (e) { return e.id === id; })[0]; }
+  function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function dstr(t) { var d = new Date(t); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
+  function setTimeOf(t, val) { var p = String(val).split(':'); if (p.length < 2) return t; var d = new Date(t); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
+
+  function confirmBox(msg, yes) {
+    return new Promise(function (res) {
+      $('modal-msg').textContent = msg; $('modal-yes').textContent = yes || 'אישור';
+      $('modal').hidden = false;
+      function done(v) { $('modal').hidden = true; $('modal-yes').onclick = $('modal-no').onclick = null; res(v); }
+      $('modal-yes').onclick = function () { done(true); };
+      $('modal-no').onclick = function () { done(false); };
+    });
+  }
+  function storageNote() {
+    return storageOk ? '' : '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>לא ניתן לשמור במכשיר בתצוגה זו.</b> הפתקים יישמרו רק עד רענון הדף.</div></div>';
+  }
+
+  /* ---------- events list ---------- */
+  function renderEvents() {
+    document.title = 'תיעוד אירוע · כרטיסיות BLS';
+    var evs = loadEvents().slice().sort(function (a, b) { return b.start - a.start; });
+    var html = storageNote() + '<div style="margin-top:1rem"><button class="btn primary block" type="button" id="ev-new">אירוע חדש</button></div>';
+    if (evs.length) {
+      html += '<h2 class="grp-h">אירועים במכשיר<span class="count">' + evs.length + '</span></h2><ul class="rows">' + evs.map(function (e) {
+        var first = e.notes.length ? e.notes.slice().sort(function (a, b) { return a.t - b.t; })[0].text : 'אין פתקים עדיין';
+        return '<li><a class="row ev-row" href="#/event/' + encodeURIComponent(e.id) + '"><div class="row-main"><div class="row-title">' + dstr(e.start) + ' · ' + hhmm(e.start) + '</div>' +
+          '<div class="row-meta"><span>' + e.notes.length + ' פתקים</span>' + (e.report ? '<span class="st ok">טיוטה הופקה</span>' : '') + '</div>' +
+          '<div class="row-snip">' + esc(first.length > 90 ? first.slice(0, 90) + '…' : first) + '</div></div><svg class="chev" aria-hidden="true"><use href="#i-chev-l"/></svg></a></li>';
+      }).join('') + '</ul>';
+    } else {
+      html += '<p class="empty">אין אירועים שמורים.</p>';
+    }
+    html += '<p class="privacy">הפתקים והדוחות נשמרים רק במכשיר הזה ולא נשלחים לשום מקום. מומלץ למחוק אירוע אחרי העברת הדוח.</p>';
+    $('events').innerHTML = html;
+    $('ev-new').addEventListener('click', function () {
+      var e = { id: uid('e'), start: Date.now(), notes: [], report: null };
+      loadEvents().push(e); saveEvents();
+      location.hash = '#/event/' + e.id;
+    });
+  }
+
+  /* ---------- event notes ---------- */
+  var QUICK = ['דופק', 'ל״ד', 'נשימות', 'סטורציה', 'סוכר', 'FAST', 'ניתן חמצן', 'ניתן', 'לדברי'];
+  var editingNote = null, drafts = {};
+  function renderEvent(id) {
+    var e = getEvent(id), el = $('event');
+    if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/events">לרשימת האירועים</a></div>'; $('ev-title').textContent = ''; return; }
+    document.title = 'אירוע ' + hhmm(e.start) + ' · כרטיסיות BLS';
+    $('ev-title').textContent = 'אירוע · ' + dstr(e.start) + ' ' + hhmm(e.start);
+    var draft = drafts[e.id] || '';
+    var notes = e.notes.slice().sort(function (a, b) { return b.t - a.t; });
+    var html = storageNote() +
+      '<div class="composer"><label class="sr" for="composer-tx">פתק חדש</label>' +
+      '<textarea id="composer-tx" rows="3" placeholder="מה נמצא, נמדד או בוצע…" enterkeyhint="enter"></textarea>' +
+      '<div class="tools"><div class="chips" id="quick">' + QUICK.map(function (w) { return '<button class="chip" type="button" data-w="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>' +
+      '<button class="btn primary sm" type="button" id="add-note">הוספה</button></div></div>' +
+      '<p class="hint">אפשר להכתיב בעזרת המיקרופון שבמקלדת. אין צורך לכתוב לפי סדר.</p>' +
+      '<div class="ev-actions"><a class="btn" href="#/event/' + encodeURIComponent(e.id) + '/report">' + (e.report ? 'לטיוטת הדוח' : 'הפקת טיוטת דוח') + '</a></div>';
+    html += notes.length ? '<p class="count-line">' + notes.length + ' פתקים · החדש למעלה</p><ul class="notes">' + notes.map(function (n) {
+      if (editingNote === n.id) {
+        return '<li class="note editing" data-id="' + n.id + '"><textarea id="edit-tx" rows="3">' + esc(n.text) + '</textarea>' +
+          '<div class="edit-tools"><input type="time" id="edit-time" value="' + hhmm(n.t) + '" aria-label="שעה"><span style="flex:1"></span>' +
+          '<button class="btn sm danger" type="button" data-act="del">מחיקה</button><button class="btn sm" type="button" data-act="cancel">ביטול</button>' +
+          '<button class="btn sm primary" type="button" data-act="save">שמירה</button></div></li>';
+      }
+      return '<li class="note" data-id="' + n.id + '"><div class="tm">' + hhmm(n.t) + '</div><div class="tx">' + esc(n.text) + '</div></li>';
+    }).join('') + '</ul>' : '';
+    el.innerHTML = html;
+
+    var tx = $('composer-tx');
+    tx.value = draft;
+    autoGrow(tx);
+    tx.addEventListener('input', function () { drafts[e.id] = tx.value; autoGrow(tx); });
+    tx.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); addNote(); } });
+    $('add-note').addEventListener('click', addNote);
+    $('quick').addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-w]'); if (!b) return;
+      var w = b.getAttribute('data-w'), v = tx.value;
+      tx.value = v + (v && !/\s$/.test(v) ? ' ' : '') + w + ' ';
+      drafts[e.id] = tx.value; tx.focus(); autoGrow(tx);
+      try { tx.setSelectionRange(tx.value.length, tx.value.length); } catch (err) { /* ignore */ }
+    });
+    var et = $('edit-tx'); if (et) { autoGrow(et); et.addEventListener('input', function () { autoGrow(et); }); }
+
+    function addNote() {
+      var text = tx.value.trim();
+      if (!text) { tx.focus(); return; }
+      e.notes.push({ id: uid('n'), t: Date.now(), text: text });
+      e.updated = Date.now(); saveEvents();
+      tx.value = ''; drafts[e.id] = '';
+      renderEvent(e.id);
+      $('composer-tx').focus();
+    }
+  }
+  $('event').addEventListener('click', function (ev) {
+    var li = ev.target.closest('.note'); if (!li) return;
+    var e = getEvent(currentEventId()); if (!e) return;
+    var n = e.notes.filter(function (x) { return x.id === li.getAttribute('data-id'); })[0]; if (!n) return;
+    var act = ev.target.closest('[data-act]');
+    if (!li.classList.contains('editing')) { editingNote = n.id; renderEvent(e.id); var et = $('edit-tx'); if (et) et.focus(); return; }
+    if (!act) return;
+    var a = act.getAttribute('data-act');
+    if (a === 'cancel') { editingNote = null; renderEvent(e.id); }
+    if (a === 'save') {
+      var v = $('edit-tx').value.trim();
+      if (v) { n.text = v; n.t = setTimeOf(n.t, $('edit-time').value); e.updated = Date.now(); saveEvents(); }
+      editingNote = null; renderEvent(e.id);
+    }
+    if (a === 'del') {
+      confirmBox('למחוק את הפתק?', 'מחיקה').then(function (ok) {
+        if (!ok) return;
+        e.notes = e.notes.filter(function (x) { return x.id !== n.id; }); e.updated = Date.now(); saveEvents();
+        editingNote = null; renderEvent(e.id);
+      });
+    }
+  });
+  $('ev-del').addEventListener('click', function () {
+    var id = currentEventId();
+    confirmBox('למחוק את האירוע, כל הפתקים וטיוטת הדוח מהמכשיר? אי אפשר לשחזר.', 'מחיקה').then(function (ok) {
+      if (!ok) return;
+      memEvents = loadEvents().filter(function (x) { return x.id !== id; }); saveEvents();
+      location.hash = '#/events';
+    });
+  });
+  function autoGrow(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 420) + 'px'; }
+  function currentEventId() { var m = (location.hash || '').match(/^#\/event\/([^/]+)/); return m ? decodeURIComponent(m[1]) : null; }
+
+  /* ---------- report draft ---------- */
+  var VITAL_FIELDS = [
+    ['pulse', 'דופק', 'num'], ['pulseRhythm', 'סדירות דופק', ['', 'סדיר', 'לא סדיר']], ['rr', 'נשימות (קצב)', 'num'],
+    ['rrQuality', 'אופי הנשימה', 'text'], ['bp', 'לחץ דם', 'text'], ['spo2Air', 'סטורציה באוויר', 'num'], ['spo2O2', 'סטורציה עם חמצן', 'num'],
+    ['spo2', 'סטורציה (לא צוין)', 'num'], ['glucose', 'סוכר בדם', 'text'], ['fast', 'FAST', 'wide']
+  ];
+  var SECTIONS = {
+    demo: { keys: ['first', 'last', 'age', 'sex', 'idnum', 'hmo'], labels: X.DEMO_LABELS },
+    history: { keys: ['background', 'story', 'findings', 'unusual', 'witnesses', 'followup'], labels: X.HISTORY_LABELS },
+    treatments: { keys: ['oxygen', 'dressings', 'meds', 'procedures'], labels: X.TX_LABELS }
+  };
+  var srcPrefix = { demo: 'demo.', history: 'hist.', treatments: 'tx.' };
+
+  function generate(e) {
+    var r = X.extract(e.notes, { cases: CASES });
+    if (e.report) { r.caseId = e.report.caseId || ''; r.caseText = e.report.caseText || ''; }
+    e.report = r; e.reportEdited = false; saveEvents();
+  }
+  function isStale(e) { return e.report && (e.updated || 0) > e.report.generatedAt; }
+
+  function srcHTML(e, ids) {
+    var byId = {}; e.notes.forEach(function (n) { byId[n.id] = n; });
+    var list = (ids || []).map(function (i) { return byId[i]; }).filter(Boolean);
+    if (!list.length) return '<div>הוזן ידנית או שהפתק נמחק.</div>';
+    return list.map(function (n) { return '<div><b>' + hhmm(n.t) + '</b> ' + esc(n.text) + '</div>'; }).join('');
+  }
+  function srcBtn(key) { return '<button class="srcbtn" type="button" data-src="' + esc(key) + '">מקור</button>'; }
+
+  function fieldHTML(sec, k, val, e) {
+    var labels = SECTIONS[sec].labels, path = sec + '.' + k, multi = sec !== 'demo';
+    var input = multi
+      ? '<textarea data-path="' + path + '" rows="2">' + esc(val) + '</textarea>'
+      : (k === 'sex'
+        ? '<select data-path="' + path + '">' + ['', 'זכר', 'נקבה'].concat(['זכר', 'נקבה'].indexOf(val) === -1 && val ? [val] : []).map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'
+        : '<input data-path="' + path + '" value="' + esc(val) + '"' + (k === 'idnum' || k === 'age' ? ' inputmode="numeric"' : '') + '>');
+    var hasSrc = e.report.sources[srcPrefix[sec] + k];
+    return '<div class="field"><div class="lbl"><span>' + esc(labels[k]) + '</span><span class="sp"></span>' + (hasSrc ? srcBtn(srcPrefix[sec] + k) : '') + '</div>' + input + '</div>';
+  }
+  function addSelect(sec, missing) {
+    if (!missing.length) return '';
+    var labels = SECTIONS[sec].labels;
+    return '<div class="addf"><select data-add="' + sec + '" aria-label="הוספת שדה"><option value="">+ הוספת שדה</option>' +
+      missing.map(function (k) { return '<option value="' + k + '">' + esc(labels[k]) + '</option>'; }).join('') + '</select></div>';
+  }
+  var shown = {}; // fields opened manually in this session: { 'demo.age': true }
+  function sectionHTML(sec, title, e) {
+    var data = e.report[sec] || {};
+    var present = SECTIONS[sec].keys.filter(function (k) { return data[k] || shown[sec + '.' + k]; });
+    var missing = SECTIONS[sec].keys.filter(function (k) { return present.indexOf(k) === -1; });
+    return '<section class="rp-sec"><h2>' + esc(title) + '</h2>' +
+      (present.length ? (sec === 'demo' ? '<div class="vgrid">' : '') + present.map(function (k) { return fieldHTML(sec, k, data[k] || '', e); }).join('') + (sec === 'demo' ? '</div>' : '') : '<p class="empty-rp">לא נמצא מידע בפתקים.</p>') +
+      addSelect(sec, missing) + '</section>';
+  }
+  function roundHTML(r, i) {
+    var present = VITAL_FIELDS.filter(function (f) { return r.values[f[0]] != null && (r.values[f[0]] !== '' || shown['v' + i + '.' + f[0]]); });
+    var missing = VITAL_FIELDS.filter(function (f) { return present.indexOf(f) === -1; });
+    return '<div class="round" data-round="' + i + '"><div class="round-h"><input type="time" data-rtime="' + i + '" value="' + hhmm(r.t) + '" aria-label="שעת המדידה">' +
+      '<span class="sp"></span>' + (r.src && r.src.length ? '<button class="srcbtn" type="button" data-rsrc="' + i + '">מקור</button>' : '') +
+      '<button class="srcbtn" type="button" data-rdel="' + i + '" style="background:none;color:var(--muted)">הסרה</button></div>' +
+      '<div class="srcbox" data-rsrcbox="' + i + '" hidden></div>' +
+      '<div class="vgrid">' + present.map(function (f) {
+        var k = f[0], v = r.values[k] || '', ctl;
+        if (Array.isArray(f[2])) ctl = '<select data-v="' + i + '.' + k + '">' + f[2].concat(f[2].indexOf(v) === -1 ? [v] : []).map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+        else ctl = '<input data-v="' + i + '.' + k + '" value="' + esc(v) + '"' + (f[2] === 'num' ? ' inputmode="numeric"' : '') + '>';
+        return '<div class="field' + (f[2] === 'wide' ? ' wide' : '') + '"><div class="lbl">' + esc(f[1]) + '</div>' + ctl + '</div>';
+      }).join('') + '</div>' +
+      (missing.length ? '<div class="addf"><select data-vadd="' + i + '" aria-label="הוספת מדד"><option value="">+ הוספת מדד</option>' + missing.map(function (f) { return '<option value="' + f[0] + '">' + esc(f[1]) + '</option>'; }).join('') + '</select></div>' : '') +
+      '</div>';
+  }
+  function caseHTML(e) {
+    var r = e.report, html = '<section class="rp-sec"><h2>המקרה שנמצא</h2>';
+    if (CASES.length) {
+      var sug = (r.caseSuggestions || []).map(function (s) { return s.id; });
+      var opts = '<option value="">בחירת מקרה…</option>';
+      if (sug.length) opts += '<optgroup label="מתאימים לפתקים">' + sug.map(function (id) { var c = CASE_BY_ID[id]; return c ? '<option value="' + esc(id) + '"' + (r.caseId === id ? ' selected' : '') + '>' + esc(c.title) + '</option>' : ''; }).join('') + '</optgroup>';
+      opts += '<optgroup label="כל המקרים">' + CASES.map(function (c) { return '<option value="' + esc(c.id) + '"' + (r.caseId === c.id && sug.indexOf(c.id) === -1 ? ' selected' : '') + '>' + esc(c.title) + '</option>'; }).join('') + '</optgroup>';
+      html += '<div class="field"><select data-path="caseId">' + opts + '</select></div>' +
+        '<div class="field"><div class="lbl">פירוט (לא חובה)</div><input data-path="caseText" value="' + esc(r.caseText || '') + '"></div>';
+    } else {
+      html += '<div class="field"><input data-path="caseText" value="' + esc(r.caseText || '') + '" placeholder="רשימת המקרים טרם הוגדרה — אפשר לכתוב ידנית"></div>';
+    }
+    return html + '</section>';
+  }
+  function reportMeta(e) { var c = CASE_BY_ID[e.report.caseId]; return { start: e.start, caseTitle: c ? c.title : '' }; }
+
+  var previewOpen = false;
+  function renderReport(id) {
+    var e = getEvent(id), el = $('report');
+    if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/events">לרשימת האירועים</a></div>'; return; }
+    document.title = 'טיוטת דוח · כרטיסיות BLS';
+    if (!e.notes.length) { el.innerHTML = '<div class="empty">אין עדיין פתקים באירוע הזה.<br><a class="linkbtn" href="#/event/' + encodeURIComponent(e.id) + '">להוספת פתקים</a></div>'; return; }
+    if (!e.report || (isStale(e) && !e.reportEdited)) generate(e);
+    var r = e.report, html = storageNote();
+    if (isStale(e)) html += '<div class="notice stale"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>נוספו או שונו פתקים אחרי הפקת הטיוטה.</b><br><button class="linkbtn" type="button" id="regen" style="padding:.3rem 0">עדכון הטיוטה מהפתקים</button> (העריכות הידניות יוחלפו)</div></div>';
+    if (r.warnings && r.warnings.length) html += '<div class="warns">' + r.warnings.map(function (w) { return '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div>' + esc(w.text) + '</div></div>'; }).join('') + '</div>';
+    html += '<p class="privacy" style="margin-top:.9rem">הטיוטה כוללת רק מידע שנכתב בפתקים. שדות שלא תועדו לא מופיעים, ואפשר להוסיף אותם ידנית. כפתור "מקור" מציג את הפתק שממנו נלקח הערך.</p>';
+    html += sectionHTML('demo', 'פרטים דמוגרפיים', e);
+    html += caseHTML(e);
+    var showC = r.complaint || shown.complaint;
+    html += '<section class="rp-sec"><h2>תלונה עיקרית</h2>' + (showC
+      ? '<div class="field"><div class="lbl"><span class="sp"></span>' + (r.sources.complaint ? srcBtn('complaint') : '') + '</div><textarea data-path="complaint" rows="2">' + esc(r.complaint || '') + '</textarea></div>'
+      : '<p class="empty-rp">לא נמצאה תלונה מפורשת בפתקים.</p><div class="addf"><button class="btn sm" type="button" id="add-complaint">+ הוספת תלונה עיקרית</button></div>') + '</section>';
+    html += sectionHTML('history', 'אנמנזה וסיפור המקרה', e);
+    html += '<section class="rp-sec"><h2>בדיקות שבוצעו</h2>' + (r.vitals.length ? r.vitals.map(roundHTML).join('') : '<p class="empty-rp">לא נמצאו מדדים בפתקים.</p>') +
+      '<div class="addf"><button class="btn sm" type="button" id="add-round">+ סבב מדידה</button></div></section>';
+    html += sectionHTML('treatments', 'טיפולים שניתנו', e);
+    html += '<div class="rp-actions"><button class="btn primary" type="button" id="rp-copy">העתקת הדוח</button>' +
+      '<button class="btn" type="button" id="rp-share">שיתוף</button>' +
+      '<button class="btn wide" type="button" id="rp-preview">' + (previewOpen ? 'הסתרת תצוגת הטקסט' : 'תצוגת הדוח כטקסט') + '</button></div>' +
+      (previewOpen ? '<pre class="preview" id="rp-pre">' + esc(X.toText(r, reportMeta(e))) + '</pre>' : '') +
+      '<p class="hint" id="rp-msg" aria-live="polite"></p>';
+    el.innerHTML = html;
+    el.querySelectorAll('textarea').forEach(autoGrow);
+    if (!navigator.share) { $('rp-share').hidden = true; $('rp-copy').classList.add('wide'); }
+  }
+
+  function setPath(r, path, val) {
+    var p = path.split('.');
+    if (p.length === 1) { r[p[0]] = val; return; }
+    r[p[0]] = r[p[0]] || {}; r[p[0]][p[1]] = val;
+  }
+  var saveTimer;
+  function touched(e) {
+    e.reportEdited = true;
+    clearTimeout(saveTimer); saveTimer = setTimeout(saveEvents, 250);
+    var pre = $('rp-pre'); if (pre) pre.textContent = X.toText(e.report, reportMeta(e));
+  }
+  $('report').addEventListener('input', function (ev) {
+    var e = getEvent(currentEventId()); if (!e || !e.report) return;
+    var t = ev.target;
+    if (t.tagName === 'TEXTAREA') autoGrow(t);
+    if (t.hasAttribute('data-path')) { setPath(e.report, t.getAttribute('data-path'), t.value); touched(e); }
+    if (t.hasAttribute('data-v')) { var p = t.getAttribute('data-v').split('.'); e.report.vitals[+p[0]].values[p[1]] = t.value; touched(e); }
+  });
+  $('report').addEventListener('change', function (ev) {
+    var e = getEvent(currentEventId()); if (!e || !e.report) return;
+    var t = ev.target;
+    if (t.hasAttribute('data-path') && t.tagName === 'SELECT') { setPath(e.report, t.getAttribute('data-path'), t.value); touched(e); }
+    if (t.hasAttribute('data-v') && t.tagName === 'SELECT') { var p0 = t.getAttribute('data-v').split('.'); e.report.vitals[+p0[0]].values[p0[1]] = t.value; touched(e); }
+    if (t.hasAttribute('data-add') && t.value) {
+      var sec = t.getAttribute('data-add'); shown[sec + '.' + t.value] = true;
+      renderReport(e.id);
+      var f = $('report').querySelector('[data-path="' + sec + '.' + t.value + '"]'); if (f) f.focus();
+    }
+    if (t.hasAttribute('data-vadd') && t.value) {
+      var i = +t.getAttribute('data-vadd'); e.report.vitals[i].values[t.value] = ''; shown['v' + i + '.' + t.value] = true; touched(e);
+      renderReport(e.id);
+      var g = $('report').querySelector('[data-v="' + i + '.' + t.value + '"]'); if (g) g.focus();
+    }
+    if (t.hasAttribute('data-rtime')) {
+      var k = +t.getAttribute('data-rtime'); e.report.vitals[k].t = setTimeOf(e.report.vitals[k].t, t.value);
+      e.report.vitals.sort(function (a, b) { return a.t - b.t; }); touched(e); renderReport(e.id);
+    }
+  });
+  $('report').addEventListener('click', function (ev) {
+    var e = getEvent(currentEventId()); if (!e || !e.report) return;
+    var t = ev.target.closest('button'); if (!t) return;
+    if (t.hasAttribute('data-src')) {
+      var fld = t.closest('.field'), box = fld.querySelector('.srcbox');
+      if (box) { box.remove(); return; }
+      box = document.createElement('div'); box.className = 'srcbox'; box.innerHTML = srcHTML(e, e.report.sources[t.getAttribute('data-src')]);
+      fld.appendChild(box); return;
+    }
+    if (t.hasAttribute('data-rsrc')) {
+      var b = $('report').querySelector('[data-rsrcbox="' + t.getAttribute('data-rsrc') + '"]');
+      b.innerHTML = srcHTML(e, e.report.vitals[+t.getAttribute('data-rsrc')].src); b.hidden = !b.hidden; return;
+    }
+    if (t.hasAttribute('data-rdel')) {
+      var idx = +t.getAttribute('data-rdel');
+      confirmBox('להסיר את סבב המדידה של ' + hhmm(e.report.vitals[idx].t) + ' מהטיוטה? הפתקים עצמם לא יימחקו.', 'הסרה').then(function (ok) {
+        if (!ok) return; e.report.vitals.splice(idx, 1); touched(e); renderReport(e.id);
+      });
+      return;
+    }
+    switch (t.id) {
+      case 'add-round': e.report.vitals.push({ t: Date.now(), values: { pulse: '' }, src: [] }); shown['v' + (e.report.vitals.length - 1) + '.pulse'] = true; touched(e); renderReport(e.id); break;
+      case 'add-complaint': shown.complaint = true; renderReport(e.id); var c = $('report').querySelector('[data-path="complaint"]'); if (c) c.focus(); break;
+      case 'regen':
+        confirmBox('לעדכן את הטיוטה מכל הפתקים? עריכות ידניות בטיוטה יוחלפו. בחירת המקרה תישמר.', 'עדכון').then(function (ok) {
+          if (!ok) return; shown = {}; generate(e); renderReport(e.id);
+        });
+        break;
+      case 'rp-preview': previewOpen = !previewOpen; renderReport(e.id); break;
+      case 'rp-copy':
+        var text = X.toText(e.report, reportMeta(e));
+        var msg = $('rp-msg');
+        try {
+          navigator.clipboard.writeText(text).then(function () { msg.textContent = 'הדוח הועתק.'; }, function () { previewOpen = true; renderReport(e.id); $('rp-msg').textContent = 'ההעתקה נחסמה — אפשר לסמן ולהעתיק מתצוגת הטקסט.'; });
+        } catch (err) { previewOpen = true; renderReport(e.id); $('rp-msg').textContent = 'ההעתקה נחסמה — אפשר לסמן ולהעתיק מתצוגת הטקסט.'; }
+        break;
+      case 'rp-share':
+        try { navigator.share({ title: 'דוח אירוע', text: X.toText(e.report, reportMeta(e)) }).catch(function () {}); } catch (err) { /* ignore */ }
+        break;
+    }
+  });
+  $('rp-back').addEventListener('click', function () { var id = currentEventId(); location.hash = '#/event/' + encodeURIComponent(id); });
+  document.querySelectorAll('[data-back]').forEach(function (b) { b.addEventListener('click', function () { location.hash = b.getAttribute('data-back'); }); });
+
+  // hide the tab bar while typing, so it does not ride on top of the iPhone keyboard
+  document.addEventListener('focusin', function (ev) { if (/^(TEXTAREA|INPUT|SELECT)$/.test(ev.target.tagName) && ev.target.id !== 'q') document.body.classList.add('typing'); });
+  document.addEventListener('focusout', function () { document.body.classList.remove('typing'); });
+
+  /* ---------- routing ---------- */
+  function measureSticky() {
+    var bar = document.querySelector('#v-card:not([hidden]) .bar');
+    if (bar) document.documentElement.style.setProperty('--sticky-h', bar.offsetHeight + 'px');
+  }
+  function show(v) {
+    ['v-list', 'v-card', 'v-about', 'v-events', 'v-event', 'v-report'].forEach(function (k) { $(k).hidden = k !== v; });
+    var tab = /^v-(events|event|report)$/.test(v) ? 'events' : 'cards';
+    document.querySelectorAll('#tabs a').forEach(function (a) { if (a.getAttribute('data-tab') === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  }
+  var current = 'v-list';
+  function route() {
+    var h = location.hash || '#/', m;
+    if (current === 'v-list') state.listScroll = window.scrollY;
+    if ((m = h.match(/^#\/card\/(.+)$/))) {
+      show('v-card'); current = 'v-card';
+      renderCard(decodeURIComponent(m[1]));
+      $('card-bar').classList.remove('scrolled');
+      window.scrollTo(0, 0); measureSticky();
+    } else if ((m = h.match(/^#\/event\/([^/]+)\/report$/))) {
+      show('v-report'); current = 'v-report'; previewOpen = false; renderReport(decodeURIComponent(m[1])); window.scrollTo(0, 0);
+    } else if ((m = h.match(/^#\/event\/([^/]+)$/))) {
+      if (current !== 'v-event') editingNote = null;
+      show('v-event'); current = 'v-event'; renderEvent(decodeURIComponent(m[1])); window.scrollTo(0, 0);
+    } else if (h.indexOf('#/events') === 0) {
+      show('v-events'); current = 'v-events'; renderEvents(); window.scrollTo(0, 0);
+    } else if (h.indexOf('#/about') === 0) {
+      show('v-about'); current = 'v-about'; renderAbout(); window.scrollTo(0, 0);
+    } else {
+      document.title = 'כרטיסיות BLS';
+      var from = current;
+      show('v-list'); current = 'v-list';
+      if (from !== 'v-list') window.scrollTo(0, state.listScroll);
+    }
+  }
+  function goBack() { if (state.inApp && history.length > 1) history.back(); else location.hash = '#/'; }
+  $('back').addEventListener('click', goBack);
+  $('back2').addEventListener('click', goBack);
+  window.addEventListener('hashchange', function () { state.inApp = true; route(); });
+  window.addEventListener('scroll', function () {
+    if (current === 'v-card') $('card-bar').classList.toggle('scrolled', window.scrollY > 70);
+  }, { passive: true });
+  window.addEventListener('resize', measureSticky);
+
+  applyFs();
+  renderCats();
+  renderNotice();
+  renderList();
+  route();
+  updateNet();
+})();
+</script>
+</body>
+</html>

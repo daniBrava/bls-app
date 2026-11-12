@@ -1,0 +1,43 @@
+// Run: node app/tests/extract.test.js  — checks the on-device extraction against sample notes.
+const assert = require('assert');
+const X = require('../src/extract.js');
+const base = new Date('2026-11-12T10:00:00').getTime();
+const mk = (arr) => arr.map((text, i) => ({ id: 'n' + i, t: base + i * 120000, text }));
+
+const r = X.extract(mk([
+  'הוזעקנו בשל כאבים בחזה. גבר כבן 60 יושב על כיסא במטבח, חיוור ומזיע.',
+  'מתלונן על כאב לוחץ במרכז החזה עם הקרנה ליד שמאל מלפני כחצי שעה',
+  'דופק 112 לא סדיר, ל"ד 150/95, סט׳ 91 באוויר, נשימות 24 מאומצות',
+  'לדברי אשתו ידוע כסוכרתי ויל"ד, נוטל אספירין 100 מ"ג קבוע. עבר צנתור לפני 3 שנים',
+  'שמו יוסי לוי, בן 62, ת.ז. 123456782 מבוטח בכללית',
+  'ניתן חמצן 4 ליטר במשקפיים. ניתן אספירין 300 מ"ג בלעיסה. סוכר 145',
+  'סטורציה 96 עם חמצן, דופק 98 סדיר',
+  'פונה לשערי צדק בליווי נט"ן במצב יציב',
+]));
+assert.deepStrictEqual(r.demo, { first: 'יוסי', last: 'לוי', age: '62', sex: 'זכר', idnum: '123456782', hmo: 'כללית' });
+assert.ok(r.warnings.some((w) => w.field === 'demo.age'), 'conflicting ages are flagged');
+assert.strictEqual(r.complaint, 'כאב לוחץ במרכז החזה עם הקרנה ליד שמאל מלפני כחצי שעה');
+assert.deepStrictEqual(r.vitals[0].values, { pulse: '112', pulseRhythm: 'לא סדיר', bp: '150/95', spo2Air: '91', rr: '24', rrQuality: 'מאומצות' });
+assert.ok(r.vitals.some((v) => v.values.spo2O2 === '96' && v.values.pulse === '98'));
+assert.ok(r.vitals.some((v) => v.values.glucose === '145'));
+assert.ok(r.treatments.meds.includes('אספירין 300'));
+assert.ok(!r.treatments.meds.includes('100 מ"ג קבוע'), 'home medication is history, not treatment');
+assert.ok(r.treatments.oxygen.includes('4 ליטר'));
+assert.ok(r.history.witnesses.includes('לדברי אשתו'));
+assert.ok(r.history.followup.includes('פונה'));
+assert.ok(!('dressings' in r.treatments), 'nothing invented');
+
+const r2 = X.extract(mk([
+  'ללא דופק וללא נשימה, התחלנו החייאה ב-10:01',
+  'חובר AED, ניתן שוק אחד',
+  'חזר דופק 10:12. דופק 60 סדיר',
+  'סוכר 45, ניתן ג\'ל סוכר 15 גרם. ת"ז 012345678',
+  'לא ניתן אספירין בשל אלרגיה',
+]));
+assert.strictEqual(r2.vitals[0].values.pulse, 'ללא דופק');
+assert.ok(r2.vitals.some((v) => v.values.pulse === '60' && new Date(v.t).getMinutes() === 12), 'explicit time carries over');
+assert.ok(r2.vitals.some((v) => v.values.glucose === '45') && !r2.vitals.some((v) => v.values.glucose === '15'));
+assert.ok(r2.warnings.some((w) => w.field === 'demo.idnum'), 'bad ID check digit is flagged');
+assert.ok(!r2.treatments.meds || !r2.treatments.meds.includes('אספירין'), 'negated drug is not listed as given');
+assert.ok(r2.history.unusual.includes('לא ניתן אספירין'));
+console.log('extract tests passed');
