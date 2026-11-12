@@ -861,7 +861,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       '<textarea id="composer-tx" rows="3" placeholder="מה נמצא, נמדד או בוצע…" enterkeyhint="enter"></textarea>' +
       '<div class="tools"><div class="chips" id="quick">' + QUICK.map(function (w) { return '<button class="chip" type="button" data-w="' + esc(w) + '">' + esc(w) + '</button>'; }).join('') + '</div>' +
       '<button class="btn primary sm" type="button" id="add-note">הוספה</button></div></div>' +
-      '<p class="hint">אפשר להכתיב בעזרת המיקרופון שבמקלדת. אין צורך לכתוב לפי סדר.</p>' +
+      '<p class="hint">אפשר להכתיב בעזרת המיקרופון שבמקלדת. אין צורך לכתוב לפי סדר.' + ('wakeLock' in navigator ? ' המסך לא יינעל כל עוד האירוע פתוח.' : '') + '</p>' +
       '<div class="ev-actions"><a class="btn" href="#/event/' + encodeURIComponent(e.id) + '/report">' + (e.report ? 'לטיוטת הדוח' : 'הפקת טיוטת דוח') + '</a></div>';
     html += notes.length ? '<p class="count-line">' + notes.length + ' פתקים · החדש למעלה</p><ul class="notes">' + notes.map(function (n) {
       if (editingNote === n.id) {
@@ -1184,6 +1184,22 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   document.addEventListener('focusin', function (ev) { if (/^(TEXTAREA|INPUT|SELECT)$/.test(ev.target.tagName) && ev.target.id !== 'q') document.body.classList.add('typing'); });
   document.addEventListener('focusout', function () { document.body.classList.remove('typing'); });
 
+  /* ---------- keep the screen awake while documenting an event ---------- */
+  var wakeLock = null, wantAwake = false;
+  function setAwake(on) {
+    wantAwake = on;
+    if (on && !wakeLock && 'wakeLock' in navigator && document.visibilityState === 'visible') {
+      navigator.wakeLock.request('screen').then(function (l) {
+        wakeLock = l;
+        l.addEventListener('release', function () { wakeLock = null; });
+        if (!wantAwake) { l.release().catch(function () {}); }
+      }).catch(function () { /* not allowed here (e.g. low battery mode) */ });
+    }
+    if (!on && wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+  }
+  // the system drops the lock when the app goes to the background; take it again on return
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && wantAwake) setAwake(true); });
+
   /* ---------- routing ---------- */
   function measureSticky() {
     var bar = document.querySelector('#v-card:not([hidden]) .bar');
@@ -1192,6 +1208,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   function show(v) {
     ['v-list', 'v-card', 'v-about', 'v-events', 'v-event', 'v-report'].forEach(function (k) { $(k).hidden = k !== v; });
     var tab = /^v-(events|event|report)$/.test(v) ? 'events' : 'cards';
+    setAwake(v === 'v-event' || v === 'v-report');
     document.querySelectorAll('#tabs a').forEach(function (a) { if (a.getAttribute('data-tab') === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   }
   var current = 'v-list';
