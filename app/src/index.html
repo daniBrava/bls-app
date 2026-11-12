@@ -259,6 +259,9 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 .idbox .muted{color:var(--muted);font-weight:500;font-size:.8rem}
 .idbox input{width:100%;font:inherit;font-size:16px;margin-top:.5rem;padding:.55rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);direction:ltr;text-align:right}
 .ai-box{margin-top:1rem}
+.ai-code label{display:block;font-size:.85rem;color:var(--muted);font-weight:650;margin-bottom:.35rem}
+.ai-code-row{display:flex;gap:.5rem}
+.ai-code-row input{flex:1;font:inherit;font-size:16px;padding:.5rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);direction:ltr}
 .ai-box .notice{margin:0 0 .6rem}
 .ai-row{margin-top:.2rem}
 .btn[disabled]{opacity:.6}
@@ -972,13 +975,19 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   }
 
   /* ---------- AI draft (online, on request) ---------- */
-  var ai = { state: 'unknown', busy: false }; // unknown | ready | off | login | noserver
+  var ai = { state: 'unknown', busy: false }; // unknown | ready | off | code | login | noserver
+  var AICODE_KEY = 'bls.aicode';
+  function aiHeaders(extra) { var h = extra || {}; var c = store(AICODE_KEY); if (c) h['x-app-code'] = c; return h; }
   function checkAI(done) {
     if (ai.state !== 'unknown' || !navigator.onLine) return done && done();
-    fetch('api/draft', { method: 'GET', credentials: 'same-origin', cache: 'no-store', redirect: 'manual' }).then(function (r) {
+    fetch('api/draft', { method: 'GET', credentials: 'same-origin', cache: 'no-store', redirect: 'manual', headers: aiHeaders() }).then(function (r) {
       if (r.type === 'opaqueredirect' || r.status === 401 || r.status === 302) { ai.state = 'login'; return; }
       if (!r.ok) { ai.state = 'noserver'; return; }
-      return r.json().then(function (j) { ai.state = j && j.ai ? 'ready' : 'off'; }, function () { ai.state = 'login'; });
+      return r.json().then(function (j) {
+        if (!j || !j.ok) { ai.state = 'noserver'; return; }
+        if (!j.ai) { ai.state = 'off'; return; }
+        ai.state = j.access ? 'ready' : (j.mode === 'code' ? 'code' : 'login');
+      }, function () { ai.state = 'login'; });
     }).catch(function () { ai.state = 'noserver'; }).then(function () { done && done(); });
   }
   function aiBoxHTML(e) {
@@ -987,6 +996,8 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (ai.state === 'ready') html += '<div class="ai-row"><button class="btn primary block" type="button" id="ai-run"' + (ai.busy ? ' disabled' : '') + '>' + (ai.busy ? 'מסדר את הטיוטה…' : (r.source === 'ai' ? 'סידור מחדש בעזרת AI' : 'שיפור הטיוטה בעזרת AI')) + '</button></div>';
     if (ai.state === 'login') html += '<p class="hint">כדי להשתמש ב-AI צריך להתחבר מחדש: <a class="linkbtn" href="api/login" style="padding:0">התחברות</a></p>';
     if (ai.state === 'off') html += '<p class="hint">השיפור בעזרת AI עוד לא הוגדר בשרת.</p>';
+    if (ai.state === 'code') html += '<div class="ai-code"><label for="ai-code-in">קוד גישה לשיפור בעזרת AI (פעם אחת בכל מכשיר)</label>' +
+      '<div class="ai-code-row"><input id="ai-code-in" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn sm primary" type="button" id="ai-code-save">שמירה</button></div></div>';
     return html ? '<div class="ai-box">' + html + '</div>' : '';
   }
   function runAI(e) {
@@ -997,16 +1008,18 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       cases: CASES.map(function (c) { return { id: c.id, title: c.title }; })
     };
     ai.busy = true; renderReport(e.id);
-    fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), redirect: 'manual' })
+    fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: aiHeaders({ 'content-type': 'application/json' }), body: JSON.stringify(payload), redirect: 'manual' })
       .then(function (r) {
-        if (r.type === 'opaqueredirect' || r.status === 401) { ai.state = 'login'; throw new Error('login'); }
+        if (r.type === 'opaqueredirect') { ai.state = 'login'; throw new Error('login'); }
+        if (r.status === 401) { return r.json().catch(function () { return {}; }).then(function (j) { ai.state = j.mode === 'code' ? 'code' : 'login'; if (j.mode === 'code') store(AICODE_KEY, ''); throw new Error(j.mode === 'code' ? 'code' : 'login'); }); }
         return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.error || 'error'); return j; }, function () { ai.state = 'login'; throw new Error('login'); });
       })
       .then(function (j) { applyAI(e, j.draft || {}, j.model); ai.busy = false; renderReport(e.id); $('rp-msg').textContent = 'הטיוטה סודרה. יש לבדוק אותה לפני שימוש.'; })
       .catch(function (err) {
         ai.busy = false; renderReport(e.id);
         var m = String(err && err.message);
-        $('rp-msg').textContent = m === 'login' ? 'צריך להתחבר מחדש לפני שימוש ב-AI.'
+        $('rp-msg').textContent = m === 'code' ? 'קוד הגישה ל-AI שגוי או שהוחלף. צריך להזין אותו מחדש.'
+          : m === 'login' ? 'צריך להתחבר מחדש לפני שימוש ב-AI.'
           : m === 'rate_limited' ? 'הגענו למגבלת השימוש החינמית. כדאי לנסות שוב בעוד דקה.'
           : m === 'not_configured' ? 'מפתח ה-AI עוד לא הוגדר בשרת.'
           : !navigator.onLine ? 'אין חיבור לרשת. הטיוטה שבמכשיר נשארה כמו שהיא.'
@@ -1217,6 +1230,12 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (t.hasAttribute('data-case')) { e.report.caseId = t.getAttribute('data-case'); e.report.caseAuto = false; touched(e); renderReport(e.id); return; }
     switch (t.id) {
       case 'rp-read': readHistory(e); break;
+      case 'ai-code-save':
+        var code = ($('ai-code-in').value || '').trim();
+        if (!code) break;
+        store(AICODE_KEY, code); ai.state = 'unknown';
+        checkAI(function () { renderReport(e.id); $('rp-msg').textContent = ai.state === 'ready' ? 'הקוד נשמר. אפשר להשתמש בשיפור בעזרת AI.' : 'הקוד לא התקבל. כדאי לבדוק אותו ולנסות שוב.'; });
+        break;
       case 'ai-run':
         if (e.reportEdited) confirmBox('לסדר את הטיוטה מחדש בעזרת AI? עריכות ידניות בטיוטה יוחלפו. הפתקים לא ישתנו.', 'סידור').then(function (ok) { if (ok) runAI(e); });
         else runAI(e);

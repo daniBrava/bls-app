@@ -2,7 +2,8 @@
 // Turns the medic's free-text event notes into a structured report draft with Gemini.
 //
 // - The Gemini key lives only here (Pages secret GEMINI_API_KEY), never in the app.
-// - Access to the site and to this function is protected by Cloudflare Access.
+// - Use of this function requires the app access code (Pages secret APP_ACCESS_CODE, sent by the app
+//   in the x-app-code header). If no code is configured, a Cloudflare Access sign-in is required instead.
 // - Long digit runs (ID-like numbers) are removed before anything is sent to Gemini.
 // - The model is told to use only what the notes say and to cite the notes it used.
 //   The app shows the result as a draft for the medic to review and edit.
@@ -57,10 +58,21 @@ const SCHEMA = {
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const stripIds = (s) => String(s || '').replace(/\d[\d\- ]{3,12}\d/g, (m) => (m.replace(/\D/g, '').length >= 5 ? '[מספר הוסר]' : m));
 
-function accessOk(request, env) {
+async function digest(s) {
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(s))));
+}
+async function sameSecret(a, b) {
+  const [x, y] = await Promise.all([digest(a), digest(b)]);
+  let d = 0;
+  for (let i = 0; i < x.length; i++) d |= x[i] ^ y[i]; // constant-time compare of the hashes
+  return d === 0;
+}
+async function accessOk(request, env) {
   if (env.ALLOW_WITHOUT_ACCESS === '1') return true; // only for local testing
+  if (env.APP_ACCESS_CODE) return sameSecret(request.headers.get('x-app-code') || '', env.APP_ACCESS_CODE);
   return Boolean(request.headers.get('cf-access-jwt-assertion'));
 }
+const accessMode = (env) => (env.APP_ACCESS_CODE ? 'code' : 'access');
 
 async function callGemini(env, model, payload) {
   const url = `${env.GEMINI_BASE || 'https://generativelanguage.googleapis.com'}/v1beta/models/${model}:generateContent`;
@@ -68,7 +80,7 @@ async function callGemini(env, model, payload) {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!accessOk(request, env)) return json({ error: 'access_required' }, 401);
+  if (!(await accessOk(request, env))) return json({ error: 'access_required', mode: accessMode(env) }, 401);
   if (!env.GEMINI_API_KEY) return json({ error: 'not_configured' }, 503);
 
   let body;
@@ -109,5 +121,5 @@ export async function onRequestPost({ request, env }) {
 }
 
 export async function onRequestGet({ request, env }) {
-  return json({ ok: true, ai: Boolean(env.GEMINI_API_KEY), access: accessOk(request, env) });
+  return json({ ok: true, ai: Boolean(env.GEMINI_API_KEY), access: await accessOk(request, env), mode: accessMode(env) });
 }
