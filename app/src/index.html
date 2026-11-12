@@ -1012,7 +1012,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       .then(function (r) {
         if (r.type === 'opaqueredirect') { ai.state = 'login'; throw new Error('login'); }
         if (r.status === 401) { return r.json().catch(function () { return {}; }).then(function (j) { ai.state = j.mode === 'code' ? 'code' : 'login'; if (j.mode === 'code') store(AICODE_KEY, ''); throw new Error(j.mode === 'code' ? 'code' : 'login'); }); }
-        return r.json().then(function (j) { if (!r.ok) throw new Error(j && j.error || 'error'); return j; }, function () { ai.state = 'login'; throw new Error('login'); });
+        return r.json().then(function (j) { if (!r.ok) { var er = new Error(j && j.error || 'error'); er.detail = j && (j.detail || '') ; er.status = r.status; throw er; } return j; }, function () { ai.state = 'login'; throw new Error('login'); });
       })
       .then(function (j) { applyAI(e, j.draft || {}, j.model); ai.busy = false; renderReport(e.id); $('rp-msg').textContent = 'הטיוטה סודרה. יש לבדוק אותה לפני שימוש.'; })
       .catch(function (err) {
@@ -1022,8 +1022,9 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
           : m === 'login' ? 'צריך להתחבר מחדש לפני שימוש ב-AI.'
           : m === 'rate_limited' ? 'הגענו למגבלת השימוש החינמית. כדאי לנסות שוב בעוד דקה.'
           : m === 'not_configured' ? 'מפתח ה-AI עוד לא הוגדר בשרת.'
+          : m === 'key_rejected' ? 'מפתח Gemini נדחה. צריך לבדוק שהמפתח מוגבל ל-Gemini API ושהועתק במלואו.'
           : !navigator.onLine ? 'אין חיבור לרשת. הטיוטה שבמכשיר נשארה כמו שהיא.'
-          : 'השיפור בעזרת AI נכשל. הטיוטה שבמכשיר נשארה כמו שהיא.';
+          : 'השיפור בעזרת AI נכשל. הטיוטה שבמכשיר נשארה כמו שהיא.' + (m && m !== 'error' ? ' [' + m + (err.status ? ' ' + err.status : '') + (err.detail ? ': ' + String(err.detail).slice(0, 160) : '') + ']' : '');
       });
   }
   function applyAI(e, d, model) {

@@ -33,7 +33,7 @@ const textField = { type: 'object', properties: { text: { type: 'string' }, src:
 const SCHEMA = {
   type: 'object',
   properties: {
-    demo: { type: 'object', properties: { first: { type: 'string' }, last: { type: 'string' }, age: { type: 'string' }, sex: { type: 'string', enum: ['', 'זכר', 'נקבה'] }, hmo: { type: 'string' } } },
+    demo: { type: 'object', properties: { first: { type: 'string' }, last: { type: 'string' }, age: { type: 'string' }, sex: { type: 'string', description: 'זכר / נקבה / ריק' }, hmo: { type: 'string' } } },
     complaint: textField,
     anamnesis: textField,
     vitals: {
@@ -94,29 +94,41 @@ export async function onRequestPost({ request, env }) {
   const casesText = cases.map((c) => `${String(c.id).slice(0, 10)}: ${String(c.title).slice(0, 80)}`).join('\n');
 
   const prompt = `רשימת המקרים (מזהה: שם):\n${casesText || '(אין)'}\n\nהפתקים (מזהה, שעה, טקסט):\n${notesText}`;
-  const payload = {
+  const base = {
     systemInstruction: { parts: [{ text: INSTRUCTIONS }] },
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.1, responseMimeType: 'application/json', responseJsonSchema: SCHEMA }
+    contents: [{ role: 'user', parts: [{ text: prompt }] }]
   };
+  // Structured output first; if the model rejects the schema, ask for JSON with the schema in the prompt.
+  const variants = [
+    { ...base, generationConfig: { temperature: 0.1, responseMimeType: 'application/json', responseJsonSchema: SCHEMA } },
+    { ...base, contents: [{ role: 'user', parts: [{ text: prompt + '\n\nהחזר JSON בלבד לפי הסכמה הזו:\n' + JSON.stringify(SCHEMA) }] }],
+      generationConfig: { temperature: 0.1, responseMimeType: 'application/json' } }
+  ];
 
   const models = [env.GEMINI_MODEL || DEFAULT_MODEL, FALLBACK_MODEL].filter((m, i, a) => a.indexOf(m) === i);
   let last = null;
   for (const model of models) {
-    const r = await callGemini(env, model, payload);
-    if (r.ok) {
-      const data = await r.json();
-      const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
-      try {
-        return json({ model, draft: JSON.parse(text) });
-      } catch {
-        last = { status: 502, error: 'bad_model_output' };
-        continue;
+    for (const payload of variants) {
+      let r;
+      try { r = await callGemini(env, model, payload); } catch (e) { last = { status: 502, error: 'network', detail: String(e).slice(0, 200) }; continue; }
+      if (r.ok) {
+        const data = await r.json();
+        const text = (data?.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+        try {
+          return json({ model, draft: JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, '')) });
+        } catch {
+          last = { status: 502, error: 'bad_model_output', detail: (data?.candidates?.[0]?.finishReason || '') + ' ' + text.slice(0, 120) };
+          continue;
+        }
       }
+      const detail = (await r.text()).slice(0, 400);
+      last = { status: r.status, error: r.status === 429 ? 'rate_limited' : r.status === 403 || r.status === 401 ? 'key_rejected' : 'model_error', detail, model };
+      if (r.status === 400) continue;              // schema not accepted → try the plain JSON request
+      break;                                        // other errors: move on to the next model
     }
-    last = { status: r.status, error: r.status === 429 ? 'rate_limited' : 'model_error', detail: (await r.text()).slice(0, 300) };
-    if (![404, 429, 500, 503].includes(r.status)) break; // e.g. 400/403: a retry with another model will not help
+    if (last && (last.error === 'key_rejected')) break; // a different model will not fix the key
   }
+  console.log('draft failed', JSON.stringify(last));
   return json(last, last.status === 429 ? 429 : 502);
 }
 
