@@ -26,7 +26,7 @@
   /* ---------- sentence splitting ---------- */
   // Dictated notes often come as one long run without punctuation. Start a new clause before words that
   // usually open a new statement (negations, history, intake, another complaint) and before measurements.
-  var CLAUSE_START = new RegExp('\\s+(?=(?:ו)?(?:אין|ללא|שולל|שוללת|שוללים|אכל|אכלה|אכלו|שתה|שתתה|לקח|לקחה|לקחו|נטל|נטלה|יציאות|ידוע|ידועה|רקע|לדברי|היסטוריה|בעבר|מתלונן|מתלוננת|סובל|סובלת|הקיא|הקיאה|דופק|לחץ\\s*דם|ל' + Q + 'ד|סטורציה|סטורציות|סט' + Q + '|סאטורציה|נשימות|סוכר|חום\\s+גוף|טמפרטורה|FAST|פאסט)(?![' + HB + ']))', 'g');
+  var CLAUSE_START = new RegExp('\\s+(?=(?:ו)?(?:אין|ללא|שולל|שוללת|שוללים|אכל|אכלה|אכלו|שתה|שתתה|לקח|לקחה|לקחו|נטל|נטלה|יציאות|ידוע|ידועה|רקע|לדברי|היסטוריה|בעבר|מתלונן|מתלוננת|סובל|סובלת|הקיא|הקיאה|גר|גרה|גרים|נמצא|נמצאה|נמצאו|הדימום|אנחנו|להקפיד|הומלץ|המלצנו|הסברנו|חבשנו|חבשתי|ניתן|ניתנה|ניתנו|נתנו|נתתי|בוצע|ביצענו|חיברנו|קיבענו|פונה|פונתה|פינינו|הועבר|הועברה|נשאר|נשארה|סירב|סירבה|דופק|לחץ\\s*דם|ל' + Q + 'ד|סטורציה|סטורציות|סט' + Q + '|סאטורציה|נשימות|סוכר|חום\\s+גוף|טמפרטורה|FAST|פאסט)(?![' + HB + ']))', 'g');
   var RE_BIDI = /[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
   function splitSentences(text) {
     var out = [];
@@ -93,11 +93,13 @@
   var RE_FIRST = new RegExp('שם\\s*פרטי\\s*:?\\s*' + NAME_TOKEN, 'g');
   var RE_LAST = new RegExp('שם\\s*(?:ה)?משפחה\\s*:?\\s*' + NAME_TOKEN, 'g');
   var RE_NAME = new RegExp(NOT_BEFORE + '(?:שמו|שמה|בשם|שם המטופל(?:ת)?|שם מלא\\s*:?|קוראים לו|קוראים לה|שם\\s*:)\\s*' + NAME_TOKEN + '(?:\\s+' + NAME_TOKEN + ')?', 'g');
+  var RE_NAME_BEFORE_AGE = new RegExp('^' + NAME_TOKEN + '(?:\\s+' + NAME_TOKEN + ')?\\s+(?:בן|בת)\\s*\\d');
+  var NOUN_NOT_NAME = /^[הו]?(גבר|אישה|אשה|ילד|ילדה|נער|נערה|תינוק|תינוקת|פעוט|פעוטה|קשיש|קשישה|מטופל|מטופלת|חולה|פצוע|פצועה|נפגע|נפגעת|אדם|בחור|בחורה|רוכב|רוכבת|נהג|נהגת|נוסע|נוסעת|הולך|הולכת|רגל|אופניים|אופנוע|קורקינט|עובד|עובדת|פועל|חייל|חיילת|סטודנט|סטודנטית|תלמיד|תלמידה|יולדת|ספורטאי|מתאמן|מתאמנת|דייר|דיירת|שכן|שכנה|בעלה|אשתו|בנו|בתו|בנה|בתה|אביו|אמו|אביה|אמה|אחיו|אחותו|זכר|נקבה|מבוגר|מבוגרת|צעיר|צעירה|ידוע|ידועה|בן|בת|כבן|כבת|ללא|עם|של|על|גיל)$/;
   var NAME_STOP = /^(בן|בת|כבן|כבת|גיל|בגיל|ת"?ז|תז|מטופל|מטופלת|נמצא|נמצאה|ידוע|ידועה|הוא|היא|של|עם|ללא|פרטי|משפחה|המשפחה|מלא)$/;
 
   var RE_PULSE = new RegExp(NOT_BEFORE + PFX + '(?:דופק|HR)\\s*:?\\s*(\\d{2,3})(?!\\d|:\\d)', 'gi');
   var RE_NO_PULSE = /(?:ללא|אין|בלי)\s+דופק|דופק\s+(?:לא\s+)?(?:נמוש|נמושש|לא נמצא|לא נמוש|לא נמושש)/g;
-  var RE_PULSE_WORD = /(?:^|[^א-ת])[וה]?דופק\s+(מהיר|איטי|חלש|חזק|תקין|נמוש|מלא|פדיפרי|רדיאלי)((?:\s+ו?(?:לא\s*סדיר|אי[\s-]?סדיר|סדיר))?)/g;
+  var RE_PULSE_WORD = /(?:^|[^א-ת])[וה]?דופק\s+(מהיר|איטי|חלש|חזק|תקין|נמוש|מלא|פדיפרי|רדיאלי|לא\s*סדיר|אי[\s-]?סדיר|סדיר)((?:\s+ו?(?:לא\s*סדיר|אי[\s-]?סדיר|סדיר))?)/g;
   var RE_RHYTHM = /(לא\s*סדיר|לא-סדיר|אי[\s-]?סדיר|סדיר)/;
   var RE_RR = new RegExp(NOT_BEFORE + PFX + '(?:נשימות|נשימה|קצב\\s+נשימ(?:ה|ות)|RR)\\s*:?\\s*(\\d{1,2})(?!\\d|:\\d)', 'gi');
   var RE_RR_QUALITY = /(מאומצ(?:ת|ות|ים)?|תקינ(?:ה|ות|ים)?|תקין|שטחי(?:ת|ות)?|רדוד(?:ה|ות)?|רועש(?:ת|ות)?)/;
@@ -138,7 +140,8 @@
   // then the patient's own complaint. Everything else stays in the anamnesis.
   var RE_COMPLAINT = [
     /(?:תלונה(?:\s+עיקרית)?|סיבת\s+(?:ה)?(?:קריאה|הזנקה|פנייה))\s*[:\-]\s*(.+)$/,
-    /(?:הזעיק|הזעיקה|הזעיקו|הוזעקנו|הוזעקתי|הוזנקנו|הוזנקתי|הוקפצנו|הוקפצתי|נקראנו|נקראתי|הוזמנו|הזמינו|התקשר|התקשרה|התקשרו|פנה|פנתה|פנו|קריאה|קריאת|הזנקה)\s+(?:בשל|עקב|בגלל|בעקבות|על|ל|אל)\s*(.+)$/,
+    /(?:הזעיק|הזעיקה|הזעיקו|הוזעקנו|הוזעקתי|הוזנקנו|הוזנקתי|הוקפצנו|הוקפצתי|נקראנו|נקראתי|הוזמנו|הזמינו|התקשר|התקשרה|התקשרו|פנה|פנתה|פנו|קריאה|קריאת|הזנקה)\s+(?:בשל|עקב|בגלל|בעקבות|על(?!\s+ידי)|ל|אל)\s*(.+)$/,
+    /(?:^|\s)נמצא(?:ה|ו)?\s+עם\s+(.+)$/,
     /מתלונ(?:ן|נת|נים|נות)\s+(?:על\s+)?(.+)$/
   ];
 
@@ -249,6 +252,11 @@
           c('first', m[1], m);
           if (m[2] && !NAME_STOP.test(m[2])) c('last', m[2]);
         });
+        var nb = sen.match(RE_NAME_BEFORE_AGE);
+        if (nb && !NOUN_NOT_NAME.test(nb[1]) && !(nb[2] && NOUN_NOT_NAME.test(nb[2])) && !cand.first.some(function (x) { return x.src === src; })) {
+          c('first', nb[1], { index: 0, 0: nb[1] + (nb[2] ? ' ' + nb[2] : '') }, { guessed: true });
+          if (nb[2]) c('last', nb[2], null, { guessed: true });
+        }
         eachMatch(RE_AGE, sen, function (m) {
           if (FAMILY_BEFORE.test(sen.slice(0, m.index))) return;
           var kw = m[1], n = m[2], unit = m[3];
@@ -276,6 +284,7 @@
         eachMatch(RE_NO_PULSE, sen, function (m) { v('pulse', 'ללא דופק', m); });
         eachMatch(RE_PULSE_WORD, sen, function (m) {
           if (vitals.some(function (x) { return x.field === 'pulse' && x.src === src && x.t === at.t; })) return;
+          if (RE_RHYTHM.test(m[1])) { v('pulseRhythm', m[1].replace(/-/g, ' ').replace(/^אי\s?/, 'לא '), m); return; }
           v('pulse', m[1], m);
           var r = (m[2] || '').match(RE_RHYTHM);
           if (r) vitals.push({ field: 'pulseRhythm', value: r[1].replace(/-/g, ' ').replace(/^אי\s?/, 'לא '), t: at.t, explicit: at.explicit, src: src });
@@ -349,6 +358,7 @@
       demo[k] = chosen.value;
       sources['demo.' + k] = uniq(list.filter(function (x) { return x.value === chosen.value; }).map(function (x) { return x.src; }));
       if (distinct.length > 1) warnings.push({ field: 'demo.' + k, text: LABEL[k] + ': בפתקים מופיעים כמה ערכים (' + distinct.join(', ') + '). נבחר האחרון — יש לוודא.' });
+      if ((k === 'first' || k === 'last') && chosen.extra && chosen.extra.guessed) warnings.push({ field: 'demo.' + k, text: LABEL[k] + ': "' + chosen.value + '" זוהה כשם לפי המיקום לפני הגיל, בלי "שם:" או "שמו" — יש לוודא.' });
       if (k === 'idnum' && chosen.extra && !chosen.extra.valid) warnings.push({ field: 'demo.idnum', text: 'ת״ז ' + chosen.value + ': ספרת הביקורת אינה תקינה — יש לוודא את המספר.' });
     });
 
@@ -452,8 +462,8 @@
       if (k === 'fast') s = 'FAST: ' + val;
       parts.push(s);
     });
-    if (!values.pulse && values.pulseRhythm) parts.unshift('דופק ' + values.pulseRhythm);
     if (!values.rr && values.rrQuality) parts.unshift('נשימה ' + values.rrQuality);
+    if (!values.pulse && values.pulseRhythm) parts.unshift('דופק ' + values.pulseRhythm);
     return parts.join(' · ');
   }
 

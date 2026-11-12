@@ -71,4 +71,16 @@ assert.ok(dn.includes('אין שלשולים') && dn.includes('לקחה אקמו
 assert.ok(!/150|98|110|דופק|סטורציה|לחץ דם/.test(dn), 'measurements stay out of the anamnesis: ' + dn);
 assert.ok(d.vitals.some((v) => v.values.bp === '150/100' && v.values.pulse === 'מהיר'));
 assert.strictEqual(d.caseId, '70');
+// field example (12.11): name before age, "על ידי", injury found, dictated run-on
+const sh = X.extract(mk(['הוזמנו על ידי מד״א', 'שמשון בן 74 גר לבד נמצא עם חתך בשורש כף יד ימין הדימום נעצר לפני שהגענו חבשנו בתחבושת אישית להקפיד על הסגירה של האזור', 'מתלונן על בדידות', 'דופק סדיר נשימה תקינה לחץ דם 120 על 80 סטורציה 96']), { cases });
+assert.strictEqual(sh.demo.first, 'שמשון'); assert.strictEqual(sh.demo.age, '74');
+assert.ok(sh.warnings.some((w) => w.field === 'demo.first'), 'a name guessed from position is flagged');
+assert.strictEqual(sh.complaint, 'חתך בשורש כף יד ימין');
+assert.strictEqual(sh.caseId, '224');
+assert.ok(sh.history.anamnesis.includes('גר לבד') && sh.history.anamnesis.includes('מתלונן על בדידות'));
+assert.ok(!/שמשון|74|דופק/.test(sh.history.anamnesis), sh.history.anamnesis);
+assert.ok(sh.treatments.dressings.includes('תחבושת אישית') && !sh.treatments.dressings.includes('שמשון'));
+assert.ok(sh.vitals.some((v) => v.values.pulseRhythm === 'סדיר' && v.values.bp === '120/80'));
+const notName = X.extract(mk(['רוכב אופניים בן 30 נפל']), { cases });
+assert.ok(!notName.demo.first, 'a description is not a name');
 console.log('case suggestion tests passed');
