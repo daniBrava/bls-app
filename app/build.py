@@ -70,6 +70,16 @@ def main():
     template = (SRC / "index.html").read_text(encoding="utf-8")
     sw = (SRC / "sw.js").read_text(encoding="utf-8")
     extract_js = (SRC / "extract.js").read_text(encoding="utf-8")
+    severity_raw = (SRC / "severity.json").read_bytes()
+    severity = json.loads(severity_raw.decode("utf-8"))
+    card_ids = {c["id"] for c in data["cards"]}
+    for cid, level in severity.get("cards", {}).items():
+        if cid not in card_ids:
+            print(f"warning: severity.json lists unknown card '{cid}'")
+        if level not in {l["id"] for l in severity["levels"]}:
+            sys.exit(f"error: severity.json: unknown level '{level}' for '{cid}'")
+    for cid in sorted(card_ids - set(severity.get("cards", {}))):
+        print(f"warning: card '{cid}' has no severity; shown as blue")
     if "</script" in extract_js.lower():
         sys.exit("error: extract.js must not contain '</script'")
     cases_raw = CASES_FILE.read_bytes() if CASES_FILE.exists() else b"null"
@@ -78,7 +88,7 @@ def main():
     for i, c in enumerate(case_list):
         if not isinstance(c, dict) or not c.get("id") or not c.get("title"):
             sys.exit(f"error: case #{i + 1} needs 'id' and 'title'")
-    build_id = hashlib.sha256(raw + cases_raw + template.encode() + sw.encode() + extract_js.encode()).hexdigest()[:10]
+    build_id = hashlib.sha256(raw + cases_raw + severity_raw + template.encode() + sw.encode() + extract_js.encode()).hexdigest()[:10]
     built = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
 
     # Same data, same order; '<', '>' and '&' escaped so the JSON is safe inside <script>.
@@ -91,6 +101,7 @@ def main():
     (DIST / "icons").mkdir(exist_ok=True)
     html = (template.replace("__CARDS_JSON__", embedded)
             .replace("__CASES_JSON__", cases_embedded)
+            .replace("__SEVERITY_JSON__", json.dumps(severity, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c"))
             .replace("/*__EXTRACT_JS__*/", extract_js)
             .replace("__BUILD_ID__", build_id)
             .replace("__BUILD_DATE__", built))

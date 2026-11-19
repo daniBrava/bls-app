@@ -16,6 +16,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>
 :root{
+  --sev-red:#d92d20; --sev-red-bg:#fdeceb; --sev-purple:#7c3aed; --sev-purple-bg:#f1eafe; --sev-blue:#2563eb; --sev-blue-bg:#e8f0fe;
   --bg:#f3f4f6; --surface:#ffffff; --text:#0f172a; --muted:#566070; --line:#e2e5ea;
   --accent:#c24e0a; --accent-fg:#ffffff; --accent-weak:#fdeee4; --brand:#f26b21;
   --warn-bg:#fff7d6; --warn-fg:#5e4500; --warn-line:#ecd27a; --warn-dot:#c79a00;
@@ -33,6 +34,7 @@
     --ok-bg:#122e1c; --ok-fg:#8adca3; --ok-dot:#4cc477;
     --neutral-bg:#222a35; --neutral-fg:#c3cbd6;
     --mark:#6d5c12; --shadow:none;
+    --sev-red:#ff6b5f; --sev-red-bg:#3a1714; --sev-purple:#b794ff; --sev-purple-bg:#2a1e45; --sev-blue:#74a7ff; --sev-blue-bg:#15253f;
   }
 }
 *{box-sizing:border-box}
@@ -249,6 +251,25 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 .note .edit-tools{display:flex;gap:.5rem;margin-top:.55rem;flex-wrap:wrap;align-items:center}
 .note input[type=time]{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:.35rem .5rem;background:var(--surface);color:var(--text)}
 .ev-actions{display:flex;gap:.6rem;margin-top:1rem}
+.tiles{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem}
+.tile{position:relative;display:flex;flex-direction:column;gap:.35rem;min-height:5.6rem;height:100%;padding:.75rem .8rem .7rem;border-radius:14px;text-decoration:none;
+  border:1px solid var(--line);border-inline-start:5px solid var(--sev-blue);background:var(--sev-blue-bg);box-shadow:var(--shadow)}
+.tile:active{filter:brightness(.96)}
+.tile.red{border-inline-start-color:var(--sev-red);background:var(--sev-red-bg)}
+.tile.purple{border-inline-start-color:var(--sev-purple);background:var(--sev-purple-bg)}
+.tile-title{font-weight:700;font-size:.98rem;line-height:1.3;padding-inline-end:.8rem}
+.tile-meta{font-size:.76rem;color:var(--muted);margin-top:auto}
+.tile-st{position:absolute;top:.7rem;inset-inline-end:.65rem;width:.5rem;height:.5rem;border-radius:50%;background:var(--warn-dot)}
+.tile-st.ok{background:var(--ok-dot)}
+.sev-h{display:flex;align-items:center;gap:.45rem}
+.sev-dot{width:.7rem;height:.7rem;border-radius:50%;background:var(--sev-blue)}
+.sev-dot.red{background:var(--sev-red)} .sev-dot.purple{background:var(--sev-purple)}
+.new-ev{margin-top:1rem;min-height:4rem;font-size:1.2rem;gap:.6rem;border-radius:16px}
+.new-ev .plus{font-size:1.6rem;line-height:1;font-weight:400}
+.sum-bar{position:sticky;bottom:calc(4.4rem + env(safe-area-inset-bottom));z-index:15;margin-top:1rem;padding:.5rem 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
+body.typing .sum-bar{bottom:0}
+.sum-bar .btn{min-height:3.3rem;font-size:1.05rem}
+.next-ev{border-color:var(--accent);color:var(--accent)}
 .ev-actions .btn{flex:1}
 .count-line{font-size:.82rem;color:var(--muted);margin:1rem .2rem 0}
 
@@ -315,6 +336,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
 <body>
 <script id="cards-data" type="application/json">__CARDS_JSON__</script>
 <script id="cases-data" type="application/json">__CASES_JSON__</script>
+<script id="severity-data" type="application/json">__SEVERITY_JSON__</script>
 <script>/*__EXTRACT_JS__*/</script>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -390,7 +412,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
 <div id="v-event" hidden>
   <header class="bar"><div class="wrap bar-in">
     <div class="topline">
-      <button class="icon-btn back" type="button" data-back="#/events"><svg><use href="#i-chev-r"/></svg>אירועים</button>
+      <button class="icon-btn back" type="button" data-back="#/"><svg><use href="#i-chev-r"/></svg>אירועים</button>
       <div class="bar-title" style="opacity:1" id="ev-title"></div>
       <button class="icon-btn" type="button" id="ev-del" aria-label="מחיקת האירוע"><svg><use href="#i-trash"/></svg></button>
     </div>
@@ -403,7 +425,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   <header class="bar"><div class="wrap bar-in">
     <div class="topline">
       <button class="icon-btn back" type="button" id="rp-back"><svg><use href="#i-chev-r"/></svg>פתקים</button>
-      <div class="bar-title" style="opacity:1">טיוטת דוח</div>
+      <div class="bar-title" style="opacity:1">סיכום אירוע</div>
       <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button>
     </div>
   </div></header>
@@ -411,8 +433,8 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
 </div>
 
 <nav class="tabs" id="tabs" aria-label="ניווט ראשי">
-  <a href="#/" data-tab="cards"><svg aria-hidden="true"><use href="#i-cards"/></svg>כרטיסיות</a>
-  <a href="#/events" data-tab="events"><svg aria-hidden="true"><use href="#i-note"/></svg>תיעוד אירוע</a>
+  <a href="#/" data-tab="events"><svg aria-hidden="true"><use href="#i-note"/></svg>תיעוד אירוע</a>
+  <a href="#/cards" data-tab="cards"><svg aria-hidden="true"><use href="#i-cards"/></svg>כרטיסיות</a>
 </nav>
 <div class="modal" id="modal" hidden><div class="box" role="dialog" aria-modal="true"><p id="modal-msg"></p><div class="acts"><button class="btn" type="button" id="modal-no">ביטול</button><button class="btn primary" type="button" id="modal-yes">אישור</button></div></div></div>
 
@@ -607,6 +629,15 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var o = opStatus(c), d = edStatus(c);
     return '<span class="st ' + o.tone + '">' + esc(o.short) + '</span><span class="st ' + d.tone + '">' + esc(d.short) + '</span>';
   }
+  var SEV = (function () { try { return JSON.parse(document.getElementById('severity-data').textContent); } catch (e) { return null; } })() || { levels: [{ id: 'blue', label: '' }], cards: {} };
+  function sevOf(c) { return SEV.cards[c.id] || 'blue'; }
+  function tileHTML(c, lv) {
+    var o = opStatus(c);
+    return '<li><a class="tile ' + lv + '" href="#/card/' + encodeURIComponent(c.id) + '">' +
+      '<span class="tile-title">' + esc(c.title) + '</span>' +
+      '<span class="tile-meta">' + esc(c.group) + (c.kind === 'procedure' ? ' · ' + esc(KIND.procedure) : '') + '</span>' +
+      '<span class="tile-st ' + o.tone + '" title="' + esc(o.label) + '"></span></a></li>';
+  }
   function rowHTML(c, tokens, showGroup, hit) {
     var meta = '';
     if (showGroup) meta += '<span>' + hl(c.group, tokens) + '</span>';
@@ -629,11 +660,12 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     $('q-clear').hidden = !state.q;
     $('ops-notice').hidden = !!tokens.length;
     if (!tokens.length) {
-      (state.group ? [state.group] : GROUPS).forEach(function (g) {
-        var items = pool.filter(function (x) { return x.card.group === g; });
+      // grid, most urgent first: red → purple → blue (see severity.json)
+      SEV.levels.forEach(function (lv) {
+        var items = pool.filter(function (x) { return sevOf(x.card) === lv.id; });
         if (!items.length) return;
-        html += '<section><h2 class="grp-h">' + esc(g) + '<span class="count">' + items.length + '</span></h2><ul class="rows">' +
-          items.map(function (x) { return rowHTML(x.card, [], false); }).join('') + '</ul></section>';
+        html += '<section class="sev-sec"><h2 class="grp-h sev-h"><span class="sev-dot ' + lv.id + '"></span>' + esc(lv.label) + '<span class="count">' + items.length + '</span></h2><ul class="tiles">' +
+          items.map(function (x) { return tileHTML(x.card, lv.id); }).join('') + '</ul></section>';
       });
       live = pool.length + ' כרטיסיות';
     } else {
@@ -685,7 +717,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (!c) {
       $('bar-title').textContent = '';
       $('jump').innerHTML = '';
-      el.innerHTML = '<div class="empty">הכרטיסייה <b><code>' + esc(id) + '</code></b> לא נמצאה בקובץ.<br><a class="linkbtn" href="#/">לרשימת הכרטיסיות</a></div>';
+      el.innerHTML = '<div class="empty">הכרטיסייה <b><code>' + esc(id) + '</code></b> לא נמצאה בקובץ.<br><a class="linkbtn" href="#/cards">לרשימת הכרטיסיות</a></div>';
       return;
     }
     document.title = c.title + ' · כרטיסיות BLS';
@@ -844,13 +876,18 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   /* ---------- events list ---------- */
   function renderEvents() {
     document.title = 'תיעוד אירוע · כרטיסיות BLS';
-    var evs = loadEvents().slice().sort(function (a, b) { return b.start - a.start; });
-    var html = storageNote() + '<div style="margin-top:1rem"><button class="btn primary block" type="button" id="ev-new">אירוע חדש</button></div>';
+    // an event that was opened and left without any note is not kept
+    var all = loadEvents(), kept = all.filter(function (e) { return e.notes.length || e.idnum; });
+    if (kept.length !== all.length) { memEvents = kept; saveEvents(); }
+    var evs = kept.slice().sort(function (a, b) { return b.start - a.start; });
+    var html = storageNote() + '<button class="btn primary block new-ev" type="button" id="ev-new"><span class="plus" aria-hidden="true">+</span>אירוע חדש</button>';
     if (evs.length) {
       html += '<h2 class="grp-h">אירועים במכשיר<span class="count">' + evs.length + '</span></h2><ul class="rows">' + evs.map(function (e) {
         var first = e.notes.length ? e.notes.slice().sort(function (a, b) { return a.t - b.t; })[0].text : 'אין פתקים עדיין';
-        return '<li><a class="row ev-row" href="#/event/' + encodeURIComponent(e.id) + '"><div class="row-main"><div class="row-title">' + dstr(e.start) + ' · ' + hhmm(e.start) + '</div>' +
-          '<div class="row-meta"><span>' + e.notes.length + ' פתקים</span>' + (e.report ? '<span class="st ok">טיוטה הופקה</span>' : '') + '</div>' +
+        var cs = e.report && CASE_BY_ID[e.report.caseId];
+        var href = '#/event/' + encodeURIComponent(e.id) + (e.report ? '/report' : '');
+        return '<li><a class="row ev-row" href="' + href + '"><div class="row-main"><div class="row-title">' + (cs ? esc(cs.title) : 'אירוע') + '</div>' +
+          '<div class="row-meta"><span>' + dstr(e.start) + ' · ' + hhmm(e.start) + '</span><span>' + e.notes.length + ' פתקים</span>' + (e.report ? '<span class="st ok">סוכם</span>' : '') + '</div>' +
           '<div class="row-snip">' + esc(first.length > 90 ? first.slice(0, 90) + '…' : first) + '</div></div><svg class="chev" aria-hidden="true"><use href="#i-chev-l"/></svg></a></li>';
       }).join('') + '</ul>';
     } else {
@@ -859,18 +896,23 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     html += '<p class="privacy">הפתקים והדוחות נשמרים רק במכשיר הזה ולא נשלחים לשום מקום. מומלץ למחוק אירוע אחרי העברת הדוח.</p>';
     $('events').innerHTML = html;
     $('ev-new').addEventListener('click', function () {
-      var e = { id: uid('e'), start: Date.now(), notes: [], report: null };
-      loadEvents().push(e); saveEvents();
-      location.hash = '#/event/' + e.id;
+      newEvent();
     });
   }
+  function newEvent() {
+    var e = { id: uid('e'), start: Date.now(), notes: [], report: null };
+    loadEvents().push(e); saveEvents();
+    focusComposer = true;
+    location.hash = '#/event/' + e.id;
+  }
+  var focusComposer = false;
 
   /* ---------- event notes ---------- */
   var QUICK = ['דופק', 'ל״ד', 'נשימות', 'סטורציה', 'סוכר', 'FAST', 'ניתן חמצן', 'ניתן', 'לדברי'];
   var editingNote = null, drafts = {};
   function renderEvent(id) {
     var e = getEvent(id), el = $('event');
-    if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/events">לרשימת האירועים</a></div>'; $('ev-title').textContent = ''; return; }
+    if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/">לרשימת האירועים</a></div>'; $('ev-title').textContent = ''; return; }
     document.title = 'אירוע ' + hhmm(e.start) + ' · כרטיסיות BLS';
     $('ev-title').textContent = 'אירוע · ' + dstr(e.start) + ' ' + hhmm(e.start);
     var draft = drafts[e.id] || '';
@@ -883,7 +925,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       '<p class="hint">אפשר להכתיב בעזרת המיקרופון שבמקלדת. אין צורך לכתוב לפי סדר.' + ('wakeLock' in navigator ? ' המסך לא יינעל כל עוד האירוע פתוח.' : '') + '</p>' +
       '<details class="idbox"' + (e.idnum ? ' open' : '') + '><summary>ת״ז / דרכון <span class="muted">· נשמר רק בטלפון ולא נשלח לשרת</span></summary>' +
       '<input id="ev-idnum" inputmode="numeric" autocomplete="off" value="' + esc(e.idnum || '') + '" aria-label="ת״ז או דרכון"></details>' +
-      '<div class="ev-actions"><a class="btn" href="#/event/' + encodeURIComponent(e.id) + '/report">' + (e.report ? 'לטיוטת הדוח' : 'הפקת טיוטת דוח') + '</a></div>';
+      (e.notes.length ? '<div class="sum-bar"><a class="btn primary block" href="#/event/' + encodeURIComponent(e.id) + '/report">סיכום האירוע ←</a></div>' : '');
     html += notes.length ? '<p class="count-line">' + notes.length + ' פתקים · החדש למעלה</p><ul class="notes">' + notes.map(function (n) {
       if (editingNote === n.id) {
         return '<li class="note editing" data-id="' + n.id + '"><textarea id="edit-tx" rows="3">' + esc(n.text) + '</textarea>' +
@@ -909,6 +951,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       try { tx.setSelectionRange(tx.value.length, tx.value.length); } catch (err) { /* ignore */ }
     });
     var et = $('edit-tx'); if (et) { autoGrow(et); et.addEventListener('input', function () { autoGrow(et); }); }
+    if (focusComposer) { focusComposer = false; setTimeout(function () { tx.focus(); }, 50); }
     $('ev-idnum').addEventListener('input', function () {
       e.idnum = this.value.trim();
       if (e.report) { e.report.demo = e.report.demo || {}; e.report.demo.idnum = e.idnum; }
@@ -952,7 +995,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     confirmBox('למחוק את האירוע, כל הפתקים וטיוטת הדוח מהמכשיר? אי אפשר לשחזר.', 'מחיקה').then(function (ok) {
       if (!ok) return;
       memEvents = loadEvents().filter(function (x) { return x.id !== id; }); saveEvents();
-      location.hash = '#/events';
+      location.hash = '#/';
     });
   });
   function autoGrow(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 420) + 'px'; }
@@ -1009,6 +1052,15 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       '<div class="ai-code-row"><input id="ai-code-in" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn sm primary" type="button" id="ai-code-save">שמירה</button></div></div>';
     return html ? '<div class="ai-box">' + html + '</div>' : '';
   }
+  // Run the AI once by itself when the summary opens and the notes changed since the last AI draft.
+  function maybeAutoAI(e) {
+    if (ai.state !== 'ready' || ai.busy || !navigator.onLine || !e.notes.length || e.reportEdited) return;
+    var since = e.updated || e.start;
+    if (e.report && e.report.source === 'ai' && e.report.generatedAt >= since) return;
+    if ((e.aiAutoAt || 0) >= since) return; // already tried for these notes
+    e.aiAutoAt = Date.now(); saveEvents();
+    setTimeout(function () { if (currentEventId() === e.id && current === 'v-report') runAI(e); }, 0);
+  }
   function runAI(e) {
     var msg = $('rp-msg');
     var notes = e.notes.slice().sort(function (a, b) { return a.t - b.t; });
@@ -1018,6 +1070,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     };
     ai.busy = true; ai.msg = null; renderReport(e.id); showAIOverlay(true);
     var ctrl = window.AbortController ? new AbortController() : null;
+    ai.ctrl = ctrl;
     var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 75000);
     function finish(text, ok) {
       clearTimeout(timer); showAIOverlay(false);
@@ -1034,8 +1087,10 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       .then(function (j) { applyAI(e, j.draft || {}, j.model); finish('✓ הטיוטה סודרה בעזרת AI' + (j.ms ? ' (' + Math.round(j.ms / 1000) + ' שניות)' : '') + '. יש לבדוק כל שדה לפני שימוש.', true); })
       .catch(function (err) {
         var m = String(err && err.message);
-        if (err && err.name === 'AbortError') m = 'timeout';
-        finish(m === 'timeout' ? 'Gemini לא ענה בזמן, והשיפור הופסק. הטיוטה שבמכשיר נשארה כמו שהיא. אפשר לנסות שוב.' + (err.detail ? ' [' + String(err.detail).slice(0, 120) + ']' : '')
+        if (err && err.name === 'AbortError') m = ai.cancelled ? 'cancelled' : 'timeout';
+        ai.cancelled = false;
+        finish(m === 'cancelled' ? 'השיפור בעזרת AI בוטל. מוצג הסיכום שחולץ במכשיר.'
+          : m === 'timeout' ? 'Gemini לא ענה בזמן, והשיפור הופסק. הטיוטה שבמכשיר נשארה כמו שהיא. אפשר לנסות שוב.' + (err.detail ? ' [' + String(err.detail).slice(0, 120) + ']' : '')
           : m === 'code' ? 'קוד הגישה ל-AI שגוי או שהוחלף. צריך להזין אותו מחדש.'
           : m === 'login' ? 'צריך להתחבר מחדש לפני שימוש ב-AI.'
           : m === 'rate_limited' ? 'הגענו למגבלת השימוש החינמית. כדאי לנסות שוב בעוד דקה.'
@@ -1049,8 +1104,10 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var o = $('ai-overlay');
     if (!o) {
       o = document.createElement('div'); o.id = 'ai-overlay'; o.className = 'ai-overlay'; o.setAttribute('role', 'alert');
-      o.innerHTML = '<div class="box"><div class="spinner" aria-hidden="true"></div><b>מסדר את הטיוטה בעזרת AI…</b><span id="ai-secs">זה לוקח בדרך כלל 5–20 שניות</span></div>';
+      o.innerHTML = '<div class="box"><div class="spinner" aria-hidden="true"></div><b>מסדר את הסיכום בעזרת AI…</b><span id="ai-secs">זה לוקח בדרך כלל 10–20 שניות</span>' +
+        '<button class="btn sm" type="button" id="ai-cancel">להמשיך בלי AI</button></div>';
       document.body.appendChild(o);
+      $('ai-cancel').addEventListener('click', function () { ai.cancelled = true; if (ai.ctrl) ai.ctrl.abort(); });
     }
     o.hidden = !on;
     clearInterval(showAIOverlay.t);
@@ -1166,11 +1223,12 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   var previewOpen = false;
   function renderReport(id) {
     var e = getEvent(id), el = $('report');
-    if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/events">לרשימת האירועים</a></div>'; return; }
+    if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/">לרשימת האירועים</a></div>'; return; }
     document.title = 'טיוטת דוח · כרטיסיות BLS';
     if (!e.notes.length) { el.innerHTML = '<div class="empty">אין עדיין פתקים באירוע הזה.<br><a class="linkbtn" href="#/event/' + encodeURIComponent(e.id) + '">להוספת פתקים</a></div>'; return; }
     if (!e.report || (isStale(e) && !e.reportEdited && e.report.source !== 'ai')) generate(e);
     if (ai.state === 'unknown') checkAI(function () { if (currentEventId() === e.id && current === 'v-report' && ai.state !== 'unknown' && ai.state !== 'noserver') renderReport(e.id); });
+    else maybeAutoAI(e);
     var r = e.report, html = storageNote() + aiBoxHTML(e);
     if (isStale(e)) html += '<div class="notice stale"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>' + (e.report.build !== document.documentElement.dataset.build ? 'האפליקציה עודכנה אחרי הפקת הטיוטה.' : 'נוספו או שונו פתקים אחרי הפקת הטיוטה.') + '</b><br><button class="linkbtn" type="button" id="regen" style="padding:.3rem 0">עדכון הטיוטה מהפתקים</button> (העריכות הידניות יוחלפו)</div></div>';
     if (r.warnings && r.warnings.length) html += '<div class="warns">' + r.warnings.map(function (w) { return '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div>' + esc(w.text) + '</div></div>'; }).join('') + '</div>';
@@ -1187,6 +1245,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     html += sectionHTML('treatments', 'טיפולים שניתנו', e);
     html += '<div class="rp-actions">' + (ai.state === 'ready' ? '<button class="btn wide ai-btn" type="button" id="ai-run2"' + (ai.busy ? ' disabled' : '') + '>' + (ai.busy ? 'מסדר את הטיוטה…' : '✨ שיפור הטיוטה בעזרת AI') + '</button>' : '') +
       '<button class="btn primary" type="button" id="rp-copy">העתקת הדוח</button>' +
+      '<button class="btn wide next-ev" type="button" id="rp-next">+ סיום ואירוע חדש</button>' +
       '<button class="btn" type="button" id="rp-share">שיתוף</button>' +
       '<button class="btn wide" type="button" id="rp-preview">' + (previewOpen ? 'הסתרת תצוגת הטקסט' : 'תצוגת הדוח כטקסט') + '</button></div>' +
       (previewOpen ? '<pre class="preview" id="rp-pre">' + esc(X.toText(r, reportMeta(e))) + '</pre>' : '') +
@@ -1261,6 +1320,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (t.hasAttribute('data-case')) { e.report.caseId = t.getAttribute('data-case'); e.report.caseAuto = false; touched(e); renderReport(e.id); return; }
     switch (t.id) {
       case 'rp-read': readHistory(e); break;
+      case 'rp-next': newEvent(); break;
       case 'ai-code-save':
         var code = ($('ai-code-in').value || '').trim();
         if (!code) break;
@@ -1374,10 +1434,10 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     } else if ((m = h.match(/^#\/event\/([^/]+)$/))) {
       if (current !== 'v-event') editingNote = null;
       show('v-event'); current = 'v-event'; renderEvent(decodeURIComponent(m[1])); window.scrollTo(0, 0);
-    } else if (h.indexOf('#/events') === 0) {
-      show('v-events'); current = 'v-events'; renderEvents(); window.scrollTo(0, 0);
     } else if (h.indexOf('#/about') === 0) {
       show('v-about'); current = 'v-about'; renderAbout(); window.scrollTo(0, 0);
+    } else if (h.indexOf('#/cards') !== 0) { // home: event documentation
+      show('v-events'); current = 'v-events'; renderEvents(); window.scrollTo(0, 0);
     } else {
       document.title = 'כרטיסיות BLS';
       var from = current;
@@ -1385,7 +1445,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       if (from !== 'v-list') window.scrollTo(0, state.listScroll);
     }
   }
-  function goBack() { if (state.inApp && history.length > 1) history.back(); else location.hash = '#/'; }
+  function goBack() { if (state.inApp && history.length > 1) history.back(); else location.hash = '#/cards'; }
   $('back').addEventListener('click', goBack);
   $('back2').addEventListener('click', goBack);
   window.addEventListener('hashchange', function () { state.inApp = true; route(); });

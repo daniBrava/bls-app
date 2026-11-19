@@ -1,0 +1,30 @@
+{
+  "_note": "Display grouping of the cards by urgency (red / purple / blue). This is a presentation choice made in the app, not part of the card content, and should be confirmed by the project. Cards not listed here are shown in the blue group.",
+  "levels": [
+    { "id": "red", "label": "מצבים מסכני חיים" },
+    { "id": "purple", "label": "דחוף" },
+    { "id": "blue", "label": "שגרתי ונהלים" }
+  ],
+  "cards": {
+    "cpr-aed": "red",
+    "newborn-resuscitation": "red",
+    "choking": "red",
+    "anaphylaxis": "red",
+    "major-trauma": "red",
+    "drowning": "red",
+    "acs": "purple",
+    "stroke": "purple",
+    "dyspnea": "purple",
+    "altered-consciousness": "purple",
+    "arrhythmia": "purple",
+    "poisoning": "purple",
+    "heatstroke": "purple",
+    "burns-smoke": "purple",
+    "pediatric-assessment": "purple",
+    "field-delivery": "purple",
+    "venomous-injury": "purple",
+    "mass-casualty": "purple",
+    "splinting": "blue",
+    "refusal": "blue"
+  }
+}
