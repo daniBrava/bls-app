@@ -74,14 +74,14 @@ async function accessOk(request, env) {
 }
 const accessMode = (env) => (env.APP_ACCESS_CODE ? 'code' : 'access');
 
-async function callGemini(env, model, payload) {
+async function callGemini(env, model, payload, signal) {
   const key = String(env.GEMINI_API_KEY || '').trim(); // a pasted key may carry a stray space or newline
   const url = `${env.GEMINI_BASE || 'https://generativelanguage.googleapis.com'}/v1beta/models/${model}:generateContent`;
   const body = JSON.stringify(payload);
-  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body });
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body, signal });
   if (r.status !== 401) return r;
   // some keys are only accepted as a query parameter; try that once before giving up
-  return fetch(`${url}?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body });
+  return fetch(`${url}?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body, signal });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -105,22 +105,32 @@ export async function onRequestPost({ request, env }) {
   };
   // Structured output first; if the model rejects the schema, ask for JSON with the schema in the prompt.
   const variants = [
+    { ...base, generationConfig: { temperature: 0.1, responseMimeType: 'application/json', responseJsonSchema: SCHEMA, thinkingConfig: { thinkingLevel: 'low' } } },
     { ...base, generationConfig: { temperature: 0.1, responseMimeType: 'application/json', responseJsonSchema: SCHEMA } },
     { ...base, contents: [{ role: 'user', parts: [{ text: prompt + '\n\nהחזר JSON בלבד לפי הסכמה הזו:\n' + JSON.stringify(SCHEMA) }] }],
       generationConfig: { temperature: 0.1, responseMimeType: 'application/json' } }
   ];
+  // Time budget: the app waits up to 75 s. Give the main model up to 25 s, then fall back to the lighter one.
+  const started = Date.now();
+  const BUDGET_MS = 60000;
 
   const models = [env.GEMINI_MODEL || DEFAULT_MODEL, FALLBACK_MODEL].filter((m, i, a) => a.indexOf(m) === i);
   let last = null;
   for (const model of models) {
     for (const payload of variants) {
       let r;
-      try { r = await callGemini(env, model, payload); } catch (e) { last = { status: 502, error: 'network', detail: String(e).slice(0, 200) }; continue; }
+      const left = BUDGET_MS - (Date.now() - started);
+      if (left < 5000) { last = last || { status: 504, error: 'timeout' }; break; }
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), model === models[models.length - 1] ? left : Math.min(25000, left));
+      try { r = await callGemini(env, model, payload, ctrl.signal); }
+      catch (e) { clearTimeout(timer); last = { status: 504, error: e.name === 'AbortError' ? 'timeout' : 'network', detail: `${model} ${e.name === 'AbortError' ? 'did not answer in time' : String(e).slice(0, 160)}` }; break; }
+      clearTimeout(timer);
       if (r.ok) {
         const data = await r.json();
         const text = (data?.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
         try {
-          return json({ model, draft: JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, '')) });
+          return json({ model, ms: Date.now() - started, draft: JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, '')) });
         } catch {
           last = { status: 502, error: 'bad_model_output', detail: (data?.candidates?.[0]?.finishReason || '') + ' ' + text.slice(0, 120) };
           continue;
