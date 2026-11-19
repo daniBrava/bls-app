@@ -1,9 +1,22 @@
 {
-  "_note": "Display grouping of the cards by urgency (red / purple / blue). This is a presentation choice made in the app, not part of the card content, and should be confirmed by the project. Cards not listed here are shown in the blue group.",
+  "_note": "Display grouping of the cards by urgency (red / magenta / purple / blue). This is a presentation choice made in the app, not part of the card content, and should be confirmed by the project. Cards not listed here are shown in the blue group.",
   "levels": [
-    { "id": "red", "label": "מצבים מסכני חיים" },
-    { "id": "purple", "label": "דחוף" },
-    { "id": "blue", "label": "שגרתי ונהלים" }
+    {
+      "id": "red",
+      "label": "מצבים מסכני חיים"
+    },
+    {
+      "id": "magenta",
+      "label": "זמן קריטי"
+    },
+    {
+      "id": "purple",
+      "label": "דחוף"
+    },
+    {
+      "id": "blue",
+      "label": "שגרתי ונהלים"
+    }
   ],
   "cards": {
     "cpr-aed": "red",
@@ -12,16 +25,16 @@
     "anaphylaxis": "red",
     "major-trauma": "red",
     "drowning": "red",
-    "acs": "purple",
-    "stroke": "purple",
-    "dyspnea": "purple",
-    "altered-consciousness": "purple",
+    "acs": "magenta",
+    "stroke": "magenta",
+    "dyspnea": "magenta",
+    "altered-consciousness": "magenta",
     "arrhythmia": "purple",
     "poisoning": "purple",
-    "heatstroke": "purple",
+    "heatstroke": "magenta",
     "burns-smoke": "purple",
     "pediatric-assessment": "purple",
-    "field-delivery": "purple",
+    "field-delivery": "magenta",
     "venomous-injury": "purple",
     "mass-casualty": "purple",
     "splinting": "blue",

@@ -16,7 +16,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <style>
 :root{
-  --sev-red:#d92d20; --sev-red-bg:#fdeceb; --sev-purple:#7c3aed; --sev-purple-bg:#f1eafe; --sev-blue:#2563eb; --sev-blue-bg:#e8f0fe;
+  --sev-red:#d92d20; --sev-red-bg:#fdeceb; --sev-magenta:#c0267e; --sev-magenta-bg:#fce9f3; --sev-purple:#7c3aed; --sev-purple-bg:#f1eafe; --sev-blue:#2563eb; --sev-blue-bg:#e8f0fe;
   --bg:#f3f4f6; --surface:#ffffff; --text:#0f172a; --muted:#566070; --line:#e2e5ea;
   --accent:#c24e0a; --accent-fg:#ffffff; --accent-weak:#fdeee4; --brand:#f26b21;
   --warn-bg:#fff7d6; --warn-fg:#5e4500; --warn-line:#ecd27a; --warn-dot:#c79a00;
@@ -34,7 +34,7 @@
     --ok-bg:#122e1c; --ok-fg:#8adca3; --ok-dot:#4cc477;
     --neutral-bg:#222a35; --neutral-fg:#c3cbd6;
     --mark:#6d5c12; --shadow:none;
-    --sev-red:#ff6b5f; --sev-red-bg:#3a1714; --sev-purple:#b794ff; --sev-purple-bg:#2a1e45; --sev-blue:#74a7ff; --sev-blue-bg:#15253f;
+    --sev-red:#ff6b5f; --sev-red-bg:#3a1714; --sev-magenta:#ff7ac0; --sev-magenta-bg:#3a1630; --sev-purple:#b794ff; --sev-purple-bg:#2a1e45; --sev-blue:#74a7ff; --sev-blue-bg:#15253f;
   }
 }
 *{box-sizing:border-box}
@@ -257,13 +257,14 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 .tile:active{filter:brightness(.96)}
 .tile.red{border-inline-start-color:var(--sev-red);background:var(--sev-red-bg)}
 .tile.purple{border-inline-start-color:var(--sev-purple);background:var(--sev-purple-bg)}
+.tile.magenta{border-inline-start-color:var(--sev-magenta);background:var(--sev-magenta-bg)}
 .tile-title{font-weight:700;font-size:.98rem;line-height:1.3;padding-inline-end:.8rem}
 .tile-meta{font-size:.76rem;color:var(--muted);margin-top:auto}
 .tile-st{position:absolute;top:.7rem;inset-inline-end:.65rem;width:.5rem;height:.5rem;border-radius:50%;background:var(--warn-dot)}
 .tile-st.ok{background:var(--ok-dot)}
 .sev-h{display:flex;align-items:center;gap:.45rem}
 .sev-dot{width:.7rem;height:.7rem;border-radius:50%;background:var(--sev-blue)}
-.sev-dot.red{background:var(--sev-red)} .sev-dot.purple{background:var(--sev-purple)}
+.sev-dot.red{background:var(--sev-red)} .sev-dot.magenta{background:var(--sev-magenta)} .sev-dot.purple{background:var(--sev-purple)}
 .new-ev{margin-top:1rem;min-height:4rem;font-size:1.2rem;gap:.6rem;border-radius:16px}
 .new-ev .plus{font-size:1.6rem;line-height:1;font-weight:400}
 .sum-bar{position:sticky;bottom:calc(4.4rem + env(safe-area-inset-bottom));z-index:15;margin-top:1rem;padding:.5rem 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
