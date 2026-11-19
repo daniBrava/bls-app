@@ -121,7 +121,13 @@ export async function onRequestPost({ request, env }) {
           continue;
         }
       }
-      const detail = (await r.text()).slice(0, 400);
+      const raw = await r.text();
+      let detail = raw.slice(0, 400);
+      try { // Google errors: { error: { code, status, message, details: [{ reason }] } }
+        const g = JSON.parse(raw).error || {};
+        const reason = (g.details || []).map((x) => x.reason).filter(Boolean).join(',');
+        detail = [g.status, reason, g.message].filter(Boolean).join(' · ').slice(0, 400);
+      } catch { /* keep raw text */ }
       last = { status: r.status, error: r.status === 429 ? 'rate_limited' : r.status === 403 || r.status === 401 ? 'key_rejected' : 'model_error', detail, model };
       if (r.status === 400) continue;              // schema not accepted → try the plain JSON request
       break;                                        // other errors: move on to the next model

@@ -259,6 +259,14 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 .idbox .muted{color:var(--muted);font-weight:500;font-size:.8rem}
 .idbox input{width:100%;font:inherit;font-size:16px;margin-top:.5rem;padding:.55rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);direction:ltr;text-align:right}
 .ai-box{margin-top:1rem}
+.ai-msg{background:var(--neutral-bg);color:var(--text);border-color:var(--line)}
+.ai-msg.ok{background:var(--ok-bg);color:var(--ok-fg);border-color:transparent}
+.ai-btn{border-color:var(--accent);color:var(--accent)}
+.ai-overlay{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.ai-overlay .box{background:var(--surface);color:var(--text);border-radius:16px;padding:1.4rem 1.6rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center;min-width:220px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.ai-overlay .box span{color:var(--muted);font-size:.85rem}
+.spinner{width:2.2rem;height:2.2rem;border-radius:50%;border:3px solid var(--accent-weak);border-top-color:var(--accent);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .ai-code label{display:block;font-size:.85rem;color:var(--muted);font-weight:650;margin-bottom:.35rem}
 .ai-code-row{display:flex;gap:.5rem}
 .ai-code-row input{flex:1;font:inherit;font-size:16px;padding:.5rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);direction:ltr}
@@ -992,6 +1000,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   }
   function aiBoxHTML(e) {
     var r = e.report, html = '';
+    if (ai.msg) html += '<div class="notice ai-msg ' + (ai.msg.ok ? 'ok' : '') + '" role="status"><div>' + esc(ai.msg.text) + '</div></div>';
     if (r.source === 'ai') html += '<div class="notice ai-note"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>הטיוטה סודרה בעזרת AI.</b> יש לבדוק כל שדה מול הפתקים (כפתור "מקור"). <button class="linkbtn" type="button" id="ai-undo" style="padding:.2rem 0">חזרה לחילוץ במכשיר</button></div></div>';
     if (ai.state === 'ready') html += '<div class="ai-row"><button class="btn primary block" type="button" id="ai-run"' + (ai.busy ? ' disabled' : '') + '>' + (ai.busy ? 'מסדר את הטיוטה…' : (r.source === 'ai' ? 'סידור מחדש בעזרת AI' : 'שיפור הטיוטה בעזרת AI')) + '</button></div>';
     if (ai.state === 'login') html += '<p class="hint">כדי להשתמש ב-AI צריך להתחבר מחדש: <a class="linkbtn" href="api/login" style="padding:0">התחברות</a></p>';
@@ -1007,25 +1016,45 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       notes: notes.map(function (n) { return { id: n.id, time: hhmm(n.t), text: n.text.replace(/\d[\d\- ]{3,12}\d/g, function (m) { return m.replace(/\D/g, '').length >= 5 ? '[מספר הוסר]' : m; }) }; }),
       cases: CASES.map(function (c) { return { id: c.id, title: c.title }; })
     };
-    ai.busy = true; renderReport(e.id);
-    fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: aiHeaders({ 'content-type': 'application/json' }), body: JSON.stringify(payload), redirect: 'manual' })
+    ai.busy = true; ai.msg = null; renderReport(e.id); showAIOverlay(true);
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 60000);
+    function finish(text, ok) {
+      clearTimeout(timer); showAIOverlay(false);
+      ai.busy = false; ai.msg = { text: text, ok: ok }; renderReport(e.id);
+      var m = $('rp-msg'); if (m) m.textContent = text;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: aiHeaders({ 'content-type': 'application/json' }), body: JSON.stringify(payload), redirect: 'manual', signal: ctrl ? ctrl.signal : undefined })
       .then(function (r) {
         if (r.type === 'opaqueredirect') { ai.state = 'login'; throw new Error('login'); }
         if (r.status === 401) { return r.json().catch(function () { return {}; }).then(function (j) { ai.state = j.mode === 'code' ? 'code' : 'login'; if (j.mode === 'code') store(AICODE_KEY, ''); throw new Error(j.mode === 'code' ? 'code' : 'login'); }); }
         return r.json().then(function (j) { if (!r.ok) { var er = new Error(j && j.error || 'error'); er.detail = j && (j.detail || '') ; er.status = r.status; throw er; } return j; }, function () { ai.state = 'login'; throw new Error('login'); });
       })
-      .then(function (j) { applyAI(e, j.draft || {}, j.model); ai.busy = false; renderReport(e.id); $('rp-msg').textContent = 'הטיוטה סודרה. יש לבדוק אותה לפני שימוש.'; })
+      .then(function (j) { applyAI(e, j.draft || {}, j.model); finish('✓ הטיוטה סודרה בעזרת AI. יש לבדוק כל שדה לפני שימוש.', true); })
       .catch(function (err) {
-        ai.busy = false; renderReport(e.id);
         var m = String(err && err.message);
-        $('rp-msg').textContent = m === 'code' ? 'קוד הגישה ל-AI שגוי או שהוחלף. צריך להזין אותו מחדש.'
+        if (err && err.name === 'AbortError') m = 'timeout';
+        finish(m === 'timeout' ? 'השיפור בעזרת AI לקח יותר מדקה והופסק. הטיוטה שבמכשיר נשארה כמו שהיא. אפשר לנסות שוב.'
+          : m === 'code' ? 'קוד הגישה ל-AI שגוי או שהוחלף. צריך להזין אותו מחדש.'
           : m === 'login' ? 'צריך להתחבר מחדש לפני שימוש ב-AI.'
           : m === 'rate_limited' ? 'הגענו למגבלת השימוש החינמית. כדאי לנסות שוב בעוד דקה.'
           : m === 'not_configured' ? 'מפתח ה-AI עוד לא הוגדר בשרת.'
-          : m === 'key_rejected' ? 'מפתח Gemini נדחה. צריך לבדוק שהמפתח מוגבל ל-Gemini API ושהועתק במלואו.'
+          : m === 'key_rejected' ? 'Google דחה את מפתח Gemini.' + (err.detail ? ' [' + String(err.detail).slice(0, 220) + ']' : '')
           : !navigator.onLine ? 'אין חיבור לרשת. הטיוטה שבמכשיר נשארה כמו שהיא.'
-          : 'השיפור בעזרת AI נכשל. הטיוטה שבמכשיר נשארה כמו שהיא.' + (m && m !== 'error' ? ' [' + m + (err.status ? ' ' + err.status : '') + (err.detail ? ': ' + String(err.detail).slice(0, 160) : '') + ']' : '');
+          : 'השיפור בעזרת AI נכשל. הטיוטה שבמכשיר נשארה כמו שהיא.' + (m && m !== 'error' ? ' [' + m + (err.status ? ' ' + err.status : '') + (err.detail ? ': ' + String(err.detail).slice(0, 160) : '') + ']' : ''), false);
       });
+  }
+  function showAIOverlay(on) {
+    var o = $('ai-overlay');
+    if (!o) {
+      o = document.createElement('div'); o.id = 'ai-overlay'; o.className = 'ai-overlay'; o.setAttribute('role', 'alert');
+      o.innerHTML = '<div class="box"><div class="spinner" aria-hidden="true"></div><b>מסדר את הטיוטה בעזרת AI…</b><span id="ai-secs">זה לוקח בדרך כלל 5–20 שניות</span></div>';
+      document.body.appendChild(o);
+    }
+    o.hidden = !on;
+    clearInterval(showAIOverlay.t);
+    if (on) { var t0 = Date.now(); showAIOverlay.t = setInterval(function () { var s = Math.round((Date.now() - t0) / 1000); if (s >= 3) $('ai-secs').textContent = s + ' שניות…'; }, 1000); }
   }
   function applyAI(e, d, model) {
     var ids = {}; e.notes.forEach(function (n) { ids[n.id] = 1; });
@@ -1156,7 +1185,8 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     html += '<section class="rp-sec"><h2>בדיקות שבוצעו</h2>' + (r.vitals.length ? r.vitals.map(roundHTML).join('') : '<p class="empty-rp">לא נמצאו מדדים בפתקים.</p>') +
       '<div class="addf"><button class="btn sm" type="button" id="add-round">+ סבב מדידה</button></div></section>';
     html += sectionHTML('treatments', 'טיפולים שניתנו', e);
-    html += '<div class="rp-actions"><button class="btn primary" type="button" id="rp-copy">העתקת הדוח</button>' +
+    html += '<div class="rp-actions">' + (ai.state === 'ready' ? '<button class="btn wide ai-btn" type="button" id="ai-run2"' + (ai.busy ? ' disabled' : '') + '>' + (ai.busy ? 'מסדר את הטיוטה…' : '✨ שיפור הטיוטה בעזרת AI') + '</button>' : '') +
+      '<button class="btn primary" type="button" id="rp-copy">העתקת הדוח</button>' +
       '<button class="btn" type="button" id="rp-share">שיתוף</button>' +
       '<button class="btn wide" type="button" id="rp-preview">' + (previewOpen ? 'הסתרת תצוגת הטקסט' : 'תצוגת הדוח כטקסט') + '</button></div>' +
       (previewOpen ? '<pre class="preview" id="rp-pre">' + esc(X.toText(r, reportMeta(e))) + '</pre>' : '') +
@@ -1237,6 +1267,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
         store(AICODE_KEY, code); ai.state = 'unknown';
         checkAI(function () { renderReport(e.id); $('rp-msg').textContent = ai.state === 'ready' ? 'הקוד נשמר. אפשר להשתמש בשיפור בעזרת AI.' : 'הקוד לא התקבל. כדאי לבדוק אותו ולנסות שוב.'; });
         break;
+      case 'ai-run2':
       case 'ai-run':
         if (e.reportEdited) confirmBox('לסדר את הטיוטה מחדש בעזרת AI? עריכות ידניות בטיוטה יוחלפו. הפתקים לא ישתנו.', 'סידור').then(function (ok) { if (ok) runAI(e); });
         else runAI(e);
@@ -1339,7 +1370,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       $('card-bar').classList.remove('scrolled');
       window.scrollTo(0, 0); measureSticky();
     } else if ((m = h.match(/^#\/event\/([^/]+)\/report$/))) {
-      show('v-report'); current = 'v-report'; previewOpen = false; renderReport(decodeURIComponent(m[1])); window.scrollTo(0, 0);
+      show('v-report'); current = 'v-report'; previewOpen = false; ai.msg = null; renderReport(decodeURIComponent(m[1])); window.scrollTo(0, 0);
     } else if ((m = h.match(/^#\/event\/([^/]+)$/))) {
       if (current !== 'v-event') editingNote = null;
       show('v-event'); current = 'v-event'; renderEvent(decodeURIComponent(m[1])); window.scrollTo(0, 0);
