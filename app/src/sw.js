@@ -44,14 +44,33 @@ self.addEventListener('fetch', function (e) {
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.indexOf('/api/') !== -1) return; // server functions always go to the network
+  if (url.pathname.indexOf('/api/') !== -1 || url.pathname.endsWith('/version.json')) return; // never cached
   if (req.mode === 'navigate') {
-    e.respondWith(caches.match('./', { cacheName: CACHE }).then(function (r) {
-      return r || fetch(req);
-    }).catch(function () { return fetch(req); }));
+    // network first: always the newest page when there is signal; the last copy of "/" when there is not
+    e.respondWith(fetch(req).then(function (res) {
+      if (res.ok) {
+        var keep = res.redirected ? res.clone().blob().then(function (b) { return new Response(b, { status: 200, headers: res.headers }); }) : Promise.resolve(res.clone());
+        keep.then(function (copy) { return caches.open(CACHE).then(function (c) { return c.put('./', copy); }); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match('./', { cacheName: CACHE }).then(function (r) { return r || caches.match('./'); });
+    }));
     return;
   }
   e.respondWith(caches.match(req, { cacheName: CACHE, ignoreSearch: true }).then(function (r) {
     return r || fetch(req);
+  }));
+});
+
+// a tapped notification focuses the open app and goes to the screen it is about
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var hash = (e.notification.data && e.notification.data.hash) || '#/';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    for (var i = 0; i < list.length; i++) {
+      if ('focus' in list[i]) { list[i].postMessage({ type: 'navigate', hash: hash }); return list[i].focus(); }
+    }
+    return self.clients.openWindow('/' + hash);
   }));
 });

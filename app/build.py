@@ -108,6 +108,7 @@ def main():
     (DIST / "index.html").write_text(html, encoding="utf-8")
     (DIST / "sw.js").write_text(sw.replace("__BUILD_ID__", build_id), encoding="utf-8")
     shutil.copyfile(SRC / "manifest.webmanifest", DIST / "manifest.webmanifest")
+    (DIST / "version.json").write_text(json.dumps({"build": build_id, "built": built}), encoding="utf-8")
     shutil.copyfile(CARDS_FILE, DIST / "cards.he-IL.json")
     for icon in (SRC / "icons").glob("*.png"):
         shutil.copyfile(icon, DIST / "icons" / icon.name)

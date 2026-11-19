@@ -1,18 +1,14 @@
-name: Build and deploy app
+name: Test and build
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+# The app is served by Cloudflare Pages (https://bls-app.pages.dev), which builds from this repo.
+# This workflow only checks every push: extraction tests + a full build (card checks).
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
 
 jobs:
   build:
@@ -29,17 +25,3 @@ jobs:
         run: node app/tests/extract.test.js
       - name: Build (validates cards, embeds data)
         run: python3 app/build.py
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: app/dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he-IL" dir="rtl" data-build="__BUILD_ID__" data-built="__BUILD_DATE__">
+<html lang="he" dir="rtl" data-build="__BUILD_ID__" data-built="__BUILD_DATE__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,6 +10,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="כרטיסיות BLS">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="color-scheme" content="light dark">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -27,7 +28,7 @@
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#0d1117; --surface:#161b22; --text:#e8edf3; --muted:#9aa5b4; --line:#29313c;
     --accent:#ff8a3d; --accent-fg:#1f0d00; --accent-weak:#3a2213; --brand:#ff8a3d;
     --warn-bg:#2e2a12; --warn-fg:#f5e08a; --warn-line:#5c5220; --warn-dot:#e0c33a;
@@ -37,27 +38,49 @@
     --sev-red:#ff6b5f; --sev-red-bg:#3a1714; --sev-magenta:#ff7ac0; --sev-magenta-bg:#3a1630; --sev-purple:#b794ff; --sev-purple-bg:#2a1e45; --sev-blue:#74a7ff; --sev-blue-bg:#15253f;
   }
 }
+:root[data-theme="dark"]{
+    --bg:#0d1117; --surface:#161b22; --text:#e8edf3; --muted:#9aa5b4; --line:#29313c;
+    --accent:#ff8a3d; --accent-fg:#1f0d00; --accent-weak:#3a2213; --brand:#ff8a3d;
+    --warn-bg:#2e2a12; --warn-fg:#f5e08a; --warn-line:#5c5220; --warn-dot:#e0c33a;
+    --ok-bg:#122e1c; --ok-fg:#8adca3; --ok-dot:#4cc477;
+    --neutral-bg:#222a35; --neutral-fg:#c3cbd6;
+    --mark:#6d5c12; --shadow:none;
+    --sev-red:#ff6b5f; --sev-red-bg:#3a1714; --sev-magenta:#ff7ac0; --sev-magenta-bg:#3a1630; --sev-purple:#b794ff; --sev-purple-bg:#2a1e45; --sev-blue:#74a7ff; --sev-blue-bg:#15253f;
+  color-scheme: dark;
+}
+:root[data-theme="light"]{color-scheme: light}
 *{box-sizing:border-box}
 html{font-size:17px; -webkit-text-size-adjust:100%; text-size-adjust:100%}
 html[data-fs="1"]{font-size:15px} html[data-fs="3"]{font-size:19.5px} html[data-fs="4"]{font-size:22px}
+html,body{height:100%}
+html,body,*{touch-action:manipulation}
 body{
-  margin:0; background:var(--bg); color:var(--text);
+  margin:0; background:var(--bg); color:var(--text); overflow:hidden; overscroll-behavior:none;
   font-family:-apple-system,BlinkMacSystemFont,"SF Hebrew","Segoe UI","Noto Sans Hebrew","Arial Hebrew",Arial,"DejaVu Sans",sans-serif;
   line-height:1.55; -webkit-tap-highlight-color:transparent;
-  padding-bottom:env(safe-area-inset-bottom);
 }
+/* app frame: the page never scrolls; one scrolling pane per screen between a fixed top bar and tab bar */
+#app{height:100%;height:100dvh;max-width:460px;margin:0 auto;display:flex;flex-direction:column;position:relative;overflow:hidden;background:var(--bg);
+  padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+@media (min-width:461px){body{background:var(--neutral-bg)} #app{border-inline:1px solid var(--line);box-shadow:0 0 30px rgba(0,0,0,.08)}}
+.view{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--bg);will-change:transform}
+.view>.bar{flex:none}
+.pane{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.netbar{flex:none;background:var(--neutral-fg);color:var(--bg);font-size:.8rem;font-weight:650;text-align:center;padding:.3rem .8rem}
+input,select,textarea{font-size:max(16px,1rem)}
+.num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;display:inline-block}
 a{color:inherit}
 button{font:inherit;color:inherit}
-.wrap{max-width:720px;margin:0 auto}
+.wrap{width:100%}
 [hidden]{display:none!important}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* ---------- sticky headers ---------- */
 .bar{
-  position:sticky; top:0; z-index:20; background:var(--bg);
-  padding-top:env(safe-area-inset-top);
+  position:relative; z-index:20; background:var(--bg);
   border-bottom:1px solid var(--line);
 }
+.app-title,.bar-title{cursor:default;-webkit-user-select:none;user-select:none}
 .bar-in{padding:.55rem 1rem .6rem}
 .topline{display:flex;align-items:center;gap:.5rem;min-height:2.6rem}
 .app-title .brand{color:var(--brand)}
@@ -75,6 +98,8 @@ button{font:inherit;color:inherit}
   font-size:.72rem;font-weight:650;border-radius:999px;padding:.2rem .6rem;white-space:nowrap;
   background:var(--ok-bg);color:var(--ok-fg);border:0;cursor:pointer;
 }
+.pill{min-height:40px;min-width:40px}
+.notice a{display:inline-block;padding:10px 4px;margin:-10px 0}
 .pill.off{background:var(--neutral-bg);color:var(--neutral-fg)}
 
 .search{position:relative;margin-top:.45rem}
@@ -97,7 +122,7 @@ button{font:inherit;color:inherit}
 .chip{
   appearance:none;flex:none;border:1px solid var(--line);background:var(--surface);
   border-radius:999px;padding:.4rem .85rem;font-size:.88rem;font-weight:600;cursor:pointer;white-space:nowrap;
-  min-height:2.25rem;
+  min-height:40px;
 }
 .chip .n{color:var(--muted);font-weight:500;margin-inline-start:.3rem;font-variant-numeric:tabular-nums}
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
@@ -141,7 +166,7 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 .05em}
 .card-top.scrolled .bar-title{opacity:1}
 .back{gap:.15rem;padding-inline:.35rem .6rem}
 .jump{margin-top:.35rem}
-.jump .chip{font-size:.8rem;padding:.3rem .7rem;min-height:2rem}
+.jump .chip{font-size:.8rem;padding:.3rem .7rem;min-height:40px}
 .jump .chip .num{font-variant-numeric:tabular-nums;font-weight:750;margin-inline-end:.35rem;opacity:.7}
 .card-head{padding:1rem .15rem .2rem}
 .card-head .crumbs{display:flex;gap:.5rem;align-items:center;font-size:.85rem;color:var(--muted);flex-wrap:wrap}
@@ -197,23 +222,22 @@ mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 .05em}
 .rev-list p{margin:.2rem 0 0;color:var(--muted)}
 
 .toast{
-  position:fixed;inset-inline:1rem;bottom:calc(1rem + env(safe-area-inset-bottom));z-index:50;max-width:520px;margin:0 auto;
+  position:fixed;inset-inline:1rem;bottom:calc(76px + env(safe-area-inset-bottom));z-index:95;max-width:428px;margin:0 auto;
   background:var(--text);color:var(--bg);border-radius:12px;padding:.75rem .9rem;display:flex;gap:.75rem;align-items:center;
   box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:.9rem;
 }
-.toast button{appearance:none;border:0;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:.45rem .8rem;cursor:pointer}
+.toast button{appearance:none;border:0;border-radius:8px;background:var(--accent);color:var(--accent-fg);font-weight:700;padding:.45rem .8rem;cursor:pointer;min-height:40px}
 .toast span{flex:1}
 @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important;transition:none!important}}
 
 /* ---------- tab bar ---------- */
-body{padding-bottom:calc(4.2rem + env(safe-area-inset-bottom))}
 body.typing .tabs{display:none}
-body.typing{padding-bottom:env(safe-area-inset-bottom)}
 .tabs{
-  position:fixed;inset-inline:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);
+  flex:none;position:relative;z-index:30;background:var(--surface);border-top:1px solid var(--line);
   display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);
 }
-.tabs a{flex:1;max-width:260px;display:flex;flex-direction:column;align-items:center;gap:.1rem;padding:.45rem 0 .5rem;
+body.typing #app{padding-bottom:env(safe-area-inset-bottom)}
+.tabs a{flex:1;max-width:260px;min-height:3.3rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.1rem;padding:.45rem 0 .5rem;
   text-decoration:none;color:var(--muted);font-size:.74rem;font-weight:650}
 .tabs a svg{width:1.45rem;height:1.45rem}
 .tabs a[aria-current="page"]{color:var(--accent)}
@@ -223,10 +247,11 @@ body.typing{padding-bottom:env(safe-area-inset-bottom)}
   padding:.7rem 1rem;font:inherit;font-weight:700;cursor:pointer;min-height:2.9rem;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .btn.danger{color:#b42318}
-@media (prefers-color-scheme: dark){.btn.danger{color:#ff8a80}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.danger{color:#ff8a80}}
+:root[data-theme="dark"] .btn.danger{color:#ff8a80}
 .btn.block{width:100%}
 .btn:active{filter:brightness(.95)}
-.btn.sm{min-height:2.3rem;padding:.35rem .75rem;font-size:.85rem;border-radius:10px}
+.btn.sm{min-height:40px;padding:.35rem .75rem;font-size:.85rem;border-radius:10px}
 textarea,.field input,.field select{
   width:100%;font:inherit;font-size:max(16px,1rem);color:var(--text);background:var(--surface);
   border:1px solid var(--line);border-radius:12px;padding:.6rem .75rem;outline:none;-webkit-appearance:none;appearance:none;
@@ -241,7 +266,7 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 .composer textarea{border:0;padding:.3rem .2rem;box-shadow:none!important;min-height:4.6rem}
 .composer .tools{display:flex;gap:.5rem;align-items:center;margin-top:.5rem}
 .composer .chips{margin:0;padding:0;flex:1}
-.composer .chips .chip{font-size:.8rem;padding:.25rem .65rem;min-height:2rem}
+.composer .chips .chip{font-size:.8rem;padding:.25rem .7rem;min-height:40px}
 .hint{font-size:.78rem;color:var(--muted);margin:.45rem .2rem 0}
 .notes{list-style:none;margin:1rem 0 0;padding:0}
 .note{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.6rem .8rem;margin-bottom:.5rem;box-shadow:var(--shadow);cursor:pointer}
@@ -267,8 +292,7 @@ textarea{resize:none;line-height:1.5;min-height:3rem;display:block}
 .sev-dot.red{background:var(--sev-red)} .sev-dot.magenta{background:var(--sev-magenta)} .sev-dot.purple{background:var(--sev-purple)}
 .new-ev{margin-top:1rem;min-height:4rem;font-size:1.2rem;gap:.6rem;border-radius:16px}
 .new-ev .plus{font-size:1.6rem;line-height:1;font-weight:400}
-.sum-bar{position:sticky;bottom:calc(4.4rem + env(safe-area-inset-bottom));z-index:15;margin-top:1rem;padding:.5rem 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
-body.typing .sum-bar{bottom:0}
+.sum-bar{position:sticky;bottom:0;z-index:15;margin-top:1rem;padding:.5rem 0;background:linear-gradient(to top,var(--bg) 70%,transparent)}
 .sum-bar .btn{min-height:3.3rem;font-size:1.05rem}
 .next-ev{border-color:var(--accent);color:var(--accent)}
 .ev-actions .btn{flex:1}
@@ -277,14 +301,14 @@ body.typing .sum-bar{bottom:0}
 /* ---------- report editor ---------- */
 .rp-sec{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.3rem .9rem .8rem;box-shadow:var(--shadow)}
 .idbox{margin-top:.8rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.55rem .8rem}
-.idbox summary{cursor:pointer;font-weight:650;font-size:.9rem}
+.idbox summary{cursor:pointer;font-weight:650;font-size:.9rem;min-height:40px;display:flex;align-items:center;gap:.3rem}
 .idbox .muted{color:var(--muted);font-weight:500;font-size:.8rem}
 .idbox input{width:100%;font:inherit;font-size:16px;margin-top:.5rem;padding:.55rem .7rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);direction:ltr;text-align:right}
 .ai-box{margin-top:1rem}
 .ai-msg{background:var(--neutral-bg);color:var(--text);border-color:var(--line)}
 .ai-msg.ok{background:var(--ok-bg);color:var(--ok-fg);border-color:transparent}
 .ai-btn{border-color:var(--accent);color:var(--accent)}
-.ai-overlay{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.ai-overlay{position:fixed;inset:0;z-index:85;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1.5rem}
 .ai-overlay .box{background:var(--surface);color:var(--text);border-radius:16px;padding:1.4rem 1.6rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center;min-width:220px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
 .ai-overlay .box span{color:var(--muted);font-size:.85rem}
 .spinner{width:2.2rem;height:2.2rem;border-radius:50%;border:3px solid var(--accent-weak);border-top-color:var(--accent);animation:spin .9s linear infinite}
@@ -296,18 +320,18 @@ body.typing .sum-bar{bottom:0}
 .ai-row{margin-top:.2rem}
 .btn[disabled]{opacity:.6}
 .case-sug{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.4rem}
-.case-sug .chip{white-space:normal;text-align:start;height:auto;min-height:2.3rem}
+.case-sug .chip{white-space:normal;text-align:start;height:auto;min-height:40px}
 .rp-sec>h2{font-size:1.02rem;margin:.6rem 0 .3rem;display:flex;align-items:center;gap:.5rem}
 .field{padding:.45rem 0}
 .field+.field{border-top:1px solid var(--line)}
 .field .lbl{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--muted);font-weight:650;margin-bottom:.3rem}
 .field .lbl .sp{flex:1}
-.srcbtn{appearance:none;border:0;background:var(--accent-weak);color:var(--accent);font-size:.72rem;font-weight:700;border-radius:999px;padding:.12rem .55rem;cursor:pointer}
+.srcbtn{appearance:none;border:0;background:var(--accent-weak);color:var(--accent);font-size:.75rem;font-weight:700;border-radius:999px;padding:0 .85rem;min-height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 .srcbox{margin-top:.4rem;font-size:.82rem;background:var(--bg);border-radius:10px;padding:.45rem .6rem;color:var(--muted)}
 .srcbox div+div{margin-top:.3rem;padding-top:.3rem;border-top:1px dashed var(--line)}
 .srcbox b{color:var(--text);font-variant-numeric:tabular-nums}
 .addf{margin-top:.5rem}
-.addf select{width:auto;font-size:.88rem;padding:.4rem 2rem .4rem .7rem;border-radius:10px;color:var(--accent);font-weight:650;border-style:dashed;
+.addf select{width:auto;font-size:16px;min-height:40px;padding:.4rem 2rem .4rem .7rem;border-radius:10px;color:var(--accent);font-weight:650;border-style:dashed;
   background-image:none}
 .round{border:1px solid var(--line);border-radius:12px;padding:.55rem .7rem;margin-top:.6rem}
 .round-h{display:flex;align-items:center;gap:.5rem}
@@ -326,9 +350,19 @@ body.typing .sum-bar{bottom:0}
 pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem;margin:1rem 0 0;line-height:1.6}
 .stale{margin-top:1rem}
 
+.seg{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem}
+.seg .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.install{margin-top:.9rem;padding:.7rem .85rem;border-radius:12px;background:var(--accent-weak);color:var(--text);font-size:.88rem;display:flex;gap:.6rem;align-items:flex-start}
+.install b{color:var(--accent)}
+.install .icon-btn{margin-inline-start:auto;min-width:40px;height:40px;color:var(--muted)}
+.sync{font-size:.8rem;color:var(--muted);margin:.6rem .2rem 0;display:flex;gap:.4rem;align-items:center}
+.sync::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--warn-dot)}
+.sync.ok::before{background:var(--ok-dot)}
+
 /* ---------- modal ---------- */
-.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;padding:1rem;padding-bottom:calc(1rem + env(safe-area-inset-bottom))}
-.modal .box{background:var(--surface);border-radius:16px;padding:1.1rem;max-width:480px;width:100%}
+.modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;padding:1rem;padding-bottom:calc(76px + env(safe-area-inset-bottom));padding-top:calc(1rem + env(safe-area-inset-top))}
+.modal .box{background:var(--surface);border-radius:16px;padding:1.1rem;max-width:428px;width:100%;max-height:100%;overflow:auto;overscroll-behavior:contain}
+.modal .acts .btn{min-height:3rem}
 .modal p{margin:0 0 1rem}
 .modal .acts{display:flex;gap:.6rem}
 .modal .acts .btn{flex:1}
@@ -352,14 +386,17 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
+<div id="app">
+<div class="netbar" id="netbar" role="status" hidden>אין חיבור לרשת · הכל נשמר במכשיר</div>
+
 <!-- ===== List view ===== -->
-<div id="v-list">
+<section class="view" id="v-list">
   <header class="bar"><div class="wrap bar-in">
     <div class="topline">
       <h1 class="app-title">כרטיסיות <span class="brand">BLS</span></h1>
       <button class="pill" id="net-pill" hidden></button>
       <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button>
-      <a class="icon-btn" href="#/about" aria-label="מידע וסטטוס אימות"><svg><use href="#i-info"/></svg></a>
+      <a class="icon-btn" href="#/about" aria-label="הגדרות ומידע"><svg><use href="#i-info"/></svg></a>
     </div>
     <div class="search" role="search">
       <svg class="s-ico" aria-hidden="true"><use href="#i-search"/></svg>
@@ -369,15 +406,15 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     </div>
     <nav class="chips" id="cats" aria-label="קטגוריות"></nav>
   </div></header>
-  <main class="wrap">
+  <main class="wrap pane">
     <div id="ops-notice"></div>
     <p class="sr" id="live" aria-live="polite"></p>
     <div id="list"></div>
   </main>
-</div>
+</section>
 
 <!-- ===== Card view ===== -->
-<div id="v-card" hidden>
+<section class="view" id="v-card" hidden>
   <header class="bar card-top" id="card-bar"><div class="wrap bar-in">
     <div class="topline">
       <button class="icon-btn back" id="back" type="button"><svg><use href="#i-chev-r"/></svg>כרטיסיות</button>
@@ -386,31 +423,31 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     </div>
     <nav class="chips jump" id="jump" aria-label="מעבר לסעיף"></nav>
   </div></header>
-  <main class="wrap" id="card"></main>
-</div>
+  <main class="wrap pane" id="card"></main>
+</section>
 
 <!-- ===== About view ===== -->
-<div id="v-about" hidden>
+<section class="view" id="v-about" hidden>
   <header class="bar"><div class="wrap bar-in">
     <div class="topline">
       <button class="icon-btn back" id="back2" type="button"><svg><use href="#i-chev-r"/></svg>כרטיסיות</button>
-      <div class="bar-title" style="opacity:1">מידע וסטטוס אימות</div>
+      <div class="bar-title" style="opacity:1">הגדרות ומידע</div>
     </div>
   </div></header>
-  <main class="wrap" id="about"></main>
-</div>
+  <main class="wrap pane" id="about"></main>
+</section>
 
 <!-- ===== Events list ===== -->
-<div id="v-events" hidden>
+<section class="view" id="v-events" hidden>
   <header class="bar"><div class="wrap bar-in">
     <div class="topline"><h1 class="app-title">תיעוד אירוע</h1>
       <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button></div>
   </div></header>
-  <main class="wrap" id="events"></main>
-</div>
+  <main class="wrap pane" id="events"></main>
+</section>
 
 <!-- ===== Event notes ===== -->
-<div id="v-event" hidden>
+<section class="view" id="v-event" hidden>
   <header class="bar"><div class="wrap bar-in">
     <div class="topline">
       <button class="icon-btn back" type="button" data-back="#/"><svg><use href="#i-chev-r"/></svg>אירועים</button>
@@ -418,11 +455,11 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       <button class="icon-btn" type="button" id="ev-del" aria-label="מחיקת האירוע"><svg><use href="#i-trash"/></svg></button>
     </div>
   </div></header>
-  <main class="wrap" id="event"></main>
-</div>
+  <main class="wrap pane" id="event"></main>
+</section>
 
 <!-- ===== Report draft ===== -->
-<div id="v-report" hidden>
+<section class="view" id="v-report" hidden>
   <header class="bar"><div class="wrap bar-in">
     <div class="topline">
       <button class="icon-btn back" type="button" id="rp-back"><svg><use href="#i-chev-r"/></svg>פתקים</button>
@@ -430,16 +467,21 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       <button class="icon-btn fs-btn" type="button" aria-label="גודל טקסט"><span class="fs-a">א</span><span class="fs-b">א</span></button>
     </div>
   </div></header>
-  <main class="wrap" id="report"></main>
-</div>
+  <main class="wrap pane" id="report"></main>
+</section>
 
 <nav class="tabs" id="tabs" aria-label="ניווט ראשי">
   <a href="#/" data-tab="events"><svg aria-hidden="true"><use href="#i-note"/></svg>תיעוד אירוע</a>
   <a href="#/cards" data-tab="cards"><svg aria-hidden="true"><use href="#i-cards"/></svg>כרטיסיות</a>
 </nav>
+</div><!-- /app -->
+
+<!-- all toasts, sheets and dialogs live here, after the tab bar and outside any scrolling pane -->
+<div id="layer">
 <div class="modal" id="modal" hidden><div class="box" role="dialog" aria-modal="true"><p id="modal-msg"></p><div class="acts"><button class="btn" type="button" id="modal-no">ביטול</button><button class="btn primary" type="button" id="modal-yes">אישור</button></div></div></div>
 
-<div class="toast" id="toast" role="status" hidden><span>גרסה חדשה של הכרטיסיות זמינה.</span><button type="button" id="toast-btn">רענון</button></div>
+<div class="toast" id="toast" role="status" hidden><span>גרסה חדשה</span><button type="button" id="toast-btn">רענון</button></div>
+</div>
 
 <script>
 (function () {
@@ -610,7 +652,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   catsEl.addEventListener('click', function (e) {
     var b = e.target.closest('.chip'); if (!b) return;
     state.group = b.getAttribute('data-g');
-    renderCats(); renderList(); window.scrollTo(0, 0);
+    renderCats(); renderList(); paneOf('v-list').scrollTop = 0;
     var on = catsEl.querySelector('[aria-pressed="true"]');
     if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   });
@@ -700,7 +742,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   var qTimer;
   qEl.addEventListener('input', function () {
     clearTimeout(qTimer);
-    qTimer = setTimeout(function () { state.q = qEl.value; renderList(); window.scrollTo(0, 0); }, 60);
+    qTimer = setTimeout(function () { state.q = qEl.value; renderList(); paneOf('v-list').scrollTop = 0; }, 60);
   });
   qEl.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
@@ -769,13 +811,13 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
 
   /* ---------- about ---------- */
   function renderAbout() {
-    document.title = 'מידע וסטטוס אימות · כרטיסיות BLS';
+    document.title = 'הגדרות ומידע · BLS';
     function tally(fn) {
       var m = {}; CARDS.forEach(function (c) { var s = fn(c).label; m[s] = (m[s] || 0) + 1; });
       return Object.keys(m).map(function (k) { return esc(k) + ': ' + m[k]; }).join('<br>');
     }
     var root = document.documentElement;
-    var html = '<section class="panel"><h2>מצב האימות</h2><dl class="kv">' +
+    var html = settingsHTML() + '<section class="panel"><h2>מצב האימות</h2><dl class="kv">' +
       '<dt>כרטיסיות</dt><dd>' + CARDS.length + '</dd>' +
       '<dt>מבצעי</dt><dd>' + tally(opStatus) + '</dd>' +
       '<dt>עריכה</dt><dd>' + tally(edStatus) + '</dd></dl>' +
@@ -807,6 +849,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   }
   function updateNet() {
     var p = $('net-pill');
+    $('netbar').hidden = navigator.onLine;
     if (!navigator.onLine) { p.hidden = false; p.className = 'pill off'; p.textContent = 'ללא רשת · זמין'; }
     else if (swReady) { p.hidden = false; p.className = 'pill'; p.textContent = 'זמין ללא רשת'; }
     else p.hidden = true;
@@ -818,24 +861,17 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   try {
     var secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     if ('serviceWorker' in navigator && secure) {
-      navigator.serviceWorker.register('sw.js').then(function (reg) {
+      navigator.serviceWorker.register('/sw.js').then(function (reg) {
         swReg = reg;
         navigator.serviceWorker.ready.then(function () { swReady = true; updateNet(); });
-        if (reg.waiting && navigator.serviceWorker.controller) $('toast').hidden = false;
-        reg.addEventListener('updatefound', function () {
-          var nw = reg.installing;
-          if (nw) nw.addEventListener('statechange', function () {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) $('toast').hidden = false;
-          });
+        navigator.serviceWorker.addEventListener('message', function (ev) { // notification tapped while the app is open
+          if (ev.data && ev.data.type === 'navigate' && ev.data.hash) location.hash = ev.data.hash;
         });
       }).catch(function () { updateNet(); });
       navigator.serviceWorker.addEventListener('controllerchange', function () { if (wantReload) location.reload(); });
     }
   } catch (e) { /* preview contexts without service workers */ }
-  $('toast-btn').addEventListener('click', function () {
-    wantReload = true;
-    if (swReg && swReg.waiting) swReg.waiting.postMessage('skipWaiting'); else location.reload();
-  });
+  $('toast-btn').addEventListener('click', function () { location.reload(); });
 
   /* =====================================================================
      Event documentation
@@ -854,9 +890,11 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   }
   function saveEvents() {
     try { localStorage.setItem(EV_KEY, JSON.stringify(memEvents)); storageOk = true; } catch (e) { storageOk = false; }
+    if (typeof updateBadge === 'function') updateBadge();
   }
   function getEvent(id) { return loadEvents().filter(function (e) { return e.id === id; })[0]; }
   function uid(p) { return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function num(s) { return '<span class="num">' + esc(s) + '</span>'; }
   function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   function dstr(t) { var d = new Date(t); return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
   function setTimeOf(t, val) { var p = String(val).split(':'); if (p.length < 2) return t; var d = new Date(t); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
@@ -868,6 +906,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       function done(v) { $('modal').hidden = true; $('modal-yes').onclick = $('modal-no').onclick = null; res(v); }
       $('modal-yes').onclick = function () { done(true); };
       $('modal-no').onclick = function () { done(false); };
+      $('modal').onclick = function (ev) { if (ev.target === $('modal')) done(false); };
     });
   }
   function storageNote() {
@@ -881,14 +920,14 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var all = loadEvents(), kept = all.filter(function (e) { return e.notes.length || e.idnum; });
     if (kept.length !== all.length) { memEvents = kept; saveEvents(); }
     var evs = kept.slice().sort(function (a, b) { return b.start - a.start; });
-    var html = storageNote() + '<button class="btn primary block new-ev" type="button" id="ev-new"><span class="plus" aria-hidden="true">+</span>אירוע חדש</button>';
+    var html = storageNote() + installHint() + '<button class="btn primary block new-ev" type="button" id="ev-new"><span class="plus" aria-hidden="true">+</span>אירוע חדש</button>';
     if (evs.length) {
       html += '<h2 class="grp-h">אירועים במכשיר<span class="count">' + evs.length + '</span></h2><ul class="rows">' + evs.map(function (e) {
         var first = e.notes.length ? e.notes.slice().sort(function (a, b) { return a.t - b.t; })[0].text : 'אין פתקים עדיין';
         var cs = e.report && CASE_BY_ID[e.report.caseId];
         var href = '#/event/' + encodeURIComponent(e.id) + (e.report ? '/report' : '');
         return '<li><a class="row ev-row" href="' + href + '"><div class="row-main"><div class="row-title">' + (cs ? esc(cs.title) : 'אירוע') + '</div>' +
-          '<div class="row-meta"><span>' + dstr(e.start) + ' · ' + hhmm(e.start) + '</span><span>' + e.notes.length + ' פתקים</span>' + (e.report ? '<span class="st ok">סוכם</span>' : '') + '</div>' +
+          '<div class="row-meta"><span>' + num(dstr(e.start) + ' ' + hhmm(e.start)) + '</span><span>' + e.notes.length + ' פתקים</span>' + (e.report ? '<span class="st ok">סוכם</span>' : '') + '</div>' +
           '<div class="row-snip">' + esc(first.length > 90 ? first.slice(0, 90) + '…' : first) + '</div></div><svg class="chev" aria-hidden="true"><use href="#i-chev-l"/></svg></a></li>';
       }).join('') + '</ul>';
     } else {
@@ -915,7 +954,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var e = getEvent(id), el = $('event');
     if (!e) { el.innerHTML = '<div class="empty">האירוע לא נמצא במכשיר.<br><a class="linkbtn" href="#/">לרשימת האירועים</a></div>'; $('ev-title').textContent = ''; return; }
     document.title = 'אירוע ' + hhmm(e.start) + ' · כרטיסיות BLS';
-    $('ev-title').textContent = 'אירוע · ' + dstr(e.start) + ' ' + hhmm(e.start);
+    $('ev-title').innerHTML = 'אירוע · ' + num(dstr(e.start) + ' ' + hhmm(e.start));
     var draft = drafts[e.id] || '';
     var notes = e.notes.slice().sort(function (a, b) { return b.t - a.t; });
     var html = storageNote() +
@@ -934,7 +973,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
           '<button class="btn sm danger" type="button" data-act="del">מחיקה</button><button class="btn sm" type="button" data-act="cancel">ביטול</button>' +
           '<button class="btn sm primary" type="button" data-act="save">שמירה</button></div></li>';
       }
-      return '<li class="note" data-id="' + n.id + '"><div class="tm">' + hhmm(n.t) + '</div><div class="tx">' + esc(n.text) + '</div></li>';
+      return '<li class="note" data-id="' + n.id + '"><div class="tm"><span class="num">' + hhmm(n.t) + '</span></div><div class="tx">' + esc(n.text) + '</div></li>';
     }).join('') + '</ul>' : '';
     el.innerHTML = html;
 
@@ -1039,6 +1078,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
         if (!j || !j.ok) { ai.state = 'noserver'; return; }
         if (!j.ai) { ai.state = 'off'; return; }
         ai.state = j.access ? 'ready' : (j.mode === 'code' ? 'code' : 'login');
+        store('bls.aiready', ai.state === 'ready' ? '1' : '0');
       }, function () { ai.state = 'login'; });
     }).catch(function () { ai.state = 'noserver'; }).then(function () { done && done(); });
   }
@@ -1055,20 +1095,30 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   }
   // Run the AI once by itself when the summary opens and the notes changed since the last AI draft.
   function maybeAutoAI(e) {
-    if (ai.state !== 'ready' || ai.busy || !navigator.onLine || !e.notes.length || e.reportEdited) return;
+    if (ai.busy || !e.notes.length || e.reportEdited) return;
+    if (!navigator.onLine) { if (store('bls.aiready') === '1' && !inQueue(e.id)) { queueAI(e); renderReport(e.id); } return; }
+    if (ai.state !== 'ready') return;
     var since = e.updated || e.start;
     if (e.report && e.report.source === 'ai' && e.report.generatedAt >= since) return;
     if ((e.aiAutoAt || 0) >= since) return; // already tried for these notes
     e.aiAutoAt = Date.now(); saveEvents();
     setTimeout(function () { if (currentEventId() === e.id && current === 'v-report') runAI(e); }, 0);
   }
-  function runAI(e) {
-    var msg = $('rp-msg');
+  function requestAI(e, signal) {
     var notes = e.notes.slice().sort(function (a, b) { return a.t - b.t; });
     var payload = {
       notes: notes.map(function (n) { return { id: n.id, time: hhmm(n.t), text: n.text.replace(/\d[\d\- ]{3,12}\d/g, function (m) { return m.replace(/\D/g, '').length >= 5 ? '[מספר הוסר]' : m; }) }; }),
       cases: CASES.map(function (c) { return { id: c.id, title: c.title }; })
     };
+    return fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: aiHeaders({ 'content-type': 'application/json' }), body: JSON.stringify(payload), redirect: 'manual', signal: signal })
+      .then(function (r) {
+        if (r.type === 'opaqueredirect') { ai.state = 'login'; throw new Error('login'); }
+        if (r.status === 401) { return r.json().catch(function () { return {}; }).then(function (j) { ai.state = j.mode === 'code' ? 'code' : 'login'; if (j.mode === 'code') store(AICODE_KEY, ''); throw new Error(j.mode === 'code' ? 'code' : 'login'); }); }
+        return r.json().then(function (j) { if (!r.ok) { var er = new Error(j && j.error || 'error'); er.detail = j && (j.detail || '') ; er.status = r.status; throw er; } return j; }, function () { ai.state = 'login'; throw new Error('login'); });
+      });
+  }
+  function runAI(e) {
+    if (!navigator.onLine) { queueAI(e); renderReport(e.id); return; }
     ai.busy = true; ai.msg = null; renderReport(e.id); showAIOverlay(true);
     var ctrl = window.AbortController ? new AbortController() : null;
     ai.ctrl = ctrl;
@@ -1077,19 +1127,15 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       clearTimeout(timer); showAIOverlay(false);
       ai.busy = false; ai.msg = { text: text, ok: ok }; renderReport(e.id);
       var m = $('rp-msg'); if (m) m.textContent = text;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      var pn = paneOf('v-report'); if (pn) pn.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    fetch('api/draft', { method: 'POST', credentials: 'same-origin', headers: aiHeaders({ 'content-type': 'application/json' }), body: JSON.stringify(payload), redirect: 'manual', signal: ctrl ? ctrl.signal : undefined })
-      .then(function (r) {
-        if (r.type === 'opaqueredirect') { ai.state = 'login'; throw new Error('login'); }
-        if (r.status === 401) { return r.json().catch(function () { return {}; }).then(function (j) { ai.state = j.mode === 'code' ? 'code' : 'login'; if (j.mode === 'code') store(AICODE_KEY, ''); throw new Error(j.mode === 'code' ? 'code' : 'login'); }); }
-        return r.json().then(function (j) { if (!r.ok) { var er = new Error(j && j.error || 'error'); er.detail = j && (j.detail || '') ; er.status = r.status; throw er; } return j; }, function () { ai.state = 'login'; throw new Error('login'); });
-      })
-      .then(function (j) { applyAI(e, j.draft || {}, j.model); finish('✓ הטיוטה סודרה בעזרת AI' + (j.ms ? ' (' + Math.round(j.ms / 1000) + ' שניות)' : '') + '. יש לבדוק כל שדה לפני שימוש.', true); })
+    requestAI(e, ctrl ? ctrl.signal : undefined)
+      .then(function (j) { unqueueAI(e.id); applyAI(e, j.draft || {}, j.model); finish('✓ הטיוטה סודרה בעזרת AI' + (j.ms ? ' (' + Math.round(j.ms / 1000) + ' שניות)' : '') + '. יש לבדוק כל שדה לפני שימוש.', true); })
       .catch(function (err) {
         var m = String(err && err.message);
         if (err && err.name === 'AbortError') m = ai.cancelled ? 'cancelled' : 'timeout';
         ai.cancelled = false;
+        if (m !== 'cancelled' && m !== 'timeout' && (!navigator.onLine || err instanceof TypeError)) { queueAI(e); finish('אין חיבור כרגע. הסיכום יסודר בעזרת AI כשהחיבור יחזור.', false); return; }
         finish(m === 'cancelled' ? 'השיפור בעזרת AI בוטל. מוצג הסיכום שחולץ במכשיר.'
           : m === 'timeout' ? 'Gemini לא ענה בזמן, והשיפור הופסק. הטיוטה שבמכשיר נשארה כמו שהיא. אפשר לנסות שוב.' + (err.detail ? ' [' + String(err.detail).slice(0, 120) + ']' : '')
           : m === 'code' ? 'קוד הגישה ל-AI שגוי או שהוחלף. צריך להזין אותו מחדש.'
@@ -1107,8 +1153,9 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       o = document.createElement('div'); o.id = 'ai-overlay'; o.className = 'ai-overlay'; o.setAttribute('role', 'alert');
       o.innerHTML = '<div class="box"><div class="spinner" aria-hidden="true"></div><b>מסדר את הסיכום בעזרת AI…</b><span id="ai-secs">זה לוקח בדרך כלל 10–20 שניות</span>' +
         '<button class="btn sm" type="button" id="ai-cancel">להמשיך בלי AI</button></div>';
-      document.body.appendChild(o);
+      $('layer').appendChild(o);
       $('ai-cancel').addEventListener('click', function () { ai.cancelled = true; if (ai.ctrl) ai.ctrl.abort(); });
+      o.addEventListener('click', function (ev) { if (ev.target === o) { ai.cancelled = true; if (ai.ctrl) ai.ctrl.abort(); } });
     }
     o.hidden = !on;
     clearInterval(showAIOverlay.t);
@@ -1151,7 +1198,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     var byId = {}; e.notes.forEach(function (n) { byId[n.id] = n; });
     var list = (ids || []).map(function (i) { return byId[i]; }).filter(Boolean);
     if (!list.length) return '<div>הוזן ידנית או שהפתק נמחק.</div>';
-    return list.map(function (n) { return '<div><b>' + hhmm(n.t) + '</b> ' + esc(n.text) + '</div>'; }).join('');
+    return list.map(function (n) { return '<div><b>' + num(hhmm(n.t)) + '</b> ' + esc(n.text) + '</div>'; }).join('');
   }
   function srcBtn(key) { return '<button class="srcbtn" type="button" data-src="' + esc(key) + '">מקור</button>'; }
 
@@ -1195,7 +1242,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
       '<div class="vgrid">' + present.map(function (f) {
         var k = f[0], v = r.values[k] || '', ctl;
         if (Array.isArray(f[2])) ctl = '<select data-v="' + i + '.' + k + '">' + f[2].concat(f[2].indexOf(v) === -1 ? [v] : []).map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
-        else ctl = '<input data-v="' + i + '.' + k + '" value="' + esc(v) + '"' + (f[2] === 'num' ? ' inputmode="numeric"' : '') + '>';
+        else ctl = '<input data-v="' + i + '.' + k + '" value="' + esc(v) + '"' + (f[2] === 'num' ? ' inputmode="numeric" dir="ltr"' : (k === 'bp' || k === 'glucose' || k === 'temp' ? ' dir="ltr"' : '')) + '>';
         return '<div class="field' + (f[2] === 'wide' ? ' wide' : '') + '"><div class="lbl">' + esc(f[1]) + '</div>' + ctl + '</div>';
       }).join('') + '</div>' +
       (missing.length ? '<div class="addf"><select data-vadd="' + i + '" aria-label="הוספת מדד"><option value="">+ הוספת מדד</option>' + missing.map(function (f) { return '<option value="' + f[0] + '">' + esc(f[1]) + '</option>'; }).join('') + '</select></div>' : '') +
@@ -1230,7 +1277,8 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
     if (!e.report || (isStale(e) && !e.reportEdited && e.report.source !== 'ai')) generate(e);
     if (ai.state === 'unknown') checkAI(function () { if (currentEventId() === e.id && current === 'v-report' && ai.state !== 'unknown' && ai.state !== 'noserver') renderReport(e.id); });
     else maybeAutoAI(e);
-    var r = e.report, html = storageNote() + aiBoxHTML(e);
+    var r = e.report, html = storageNote() + aiBoxHTML(e) +
+      (inQueue(e.id) ? '<p class="sync">' + (navigator.onLine ? 'מסנכרן… הסיכום נשלח לסידור בעזרת AI' : 'ממתין לחיבור · הסיכום יסודר בעזרת AI כשהחיבור יחזור') + '</p>' : '');
     if (isStale(e)) html += '<div class="notice stale"><svg aria-hidden="true"><use href="#i-warn"/></svg><div><b>' + (e.report.build !== document.documentElement.dataset.build ? 'האפליקציה עודכנה אחרי הפקת הטיוטה.' : 'נוספו או שונו פתקים אחרי הפקת הטיוטה.') + '</b><br><button class="linkbtn" type="button" id="regen" style="padding:.3rem 0">עדכון הטיוטה מהפתקים</button> (העריכות הידניות יוחלפו)</div></div>';
     if (r.warnings && r.warnings.length) html += '<div class="warns">' + r.warnings.map(function (w) { return '<div class="notice"><svg aria-hidden="true"><use href="#i-warn"/></svg><div>' + esc(w.text) + '</div></div>'; }).join('') + '</div>';
     html += '<p class="privacy" style="margin-top:.9rem">הטיוטה כוללת רק מידע שנכתב בפתקים. שדות שלא תועדו לא מופיעים, ואפשר להוסיף אותם ידנית. כפתור "מקור" מציג את הפתק שממנו נלקח הערך.</p>';
@@ -1409,51 +1457,231 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   // the system drops the lock when the app goes to the background; take it again on return
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && wantAwake) setAwake(true); });
 
-  /* ---------- routing ---------- */
-  function measureSticky() {
-    var bar = document.querySelector('#v-card:not([hidden]) .bar');
-    if (bar) document.documentElement.style.setProperty('--sticky-h', bar.offsetHeight + 'px');
+  /* =====================================================================
+     App frame: panes, gestures, theme, versions, offline queue, notifications
+     ===================================================================== */
+  function paneOf(v) { return document.querySelector('#' + v + ' .pane'); }
+
+  // tapping the screen title scrolls its list back to the top
+  document.addEventListener('click', function (ev) {
+    if (!ev.target.closest('.app-title, .bar-title')) return;
+    var pn = paneOf(current); if (pn) pn.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // swipe back from a full-screen sub-view: from the start edge (right, in Hebrew) toward the middle
+  var BACK = {
+    'v-card': function () { goBack(); },
+    'v-about': function () { goBack(); },
+    'v-event': function () { location.hash = '#/'; },
+    'v-report': function () { location.hash = '#/event/' + encodeURIComponent(currentEventId()); }
+  };
+  (function () {
+    var app = $('app'), rtl = document.documentElement.dir === 'rtl';
+    var sx = 0, sy = 0, dx = 0, view = null, active = false;
+    function reset() {
+      active = false;
+      if (view) { view.style.transition = 'transform .2s ease'; view.style.transform = ''; }
+    }
+    app.addEventListener('touchstart', function (ev) {
+      if (!BACK[current] || ev.touches.length !== 1) return;
+      var t = ev.touches[0], r = app.getBoundingClientRect();
+      if ((rtl ? r.right - t.clientX : t.clientX - r.left) > 28) return;
+      sx = t.clientX; sy = t.clientY; dx = 0; view = $(current); active = true;
+    }, { passive: true });
+    app.addEventListener('touchmove', function (ev) {
+      if (!active) return;
+      var t = ev.touches[0], mx = t.clientX - sx, my = t.clientY - sy;
+      if (Math.abs(my) > 14 && Math.abs(my) > Math.abs(mx)) { reset(); return; }
+      dx = rtl ? Math.min(0, mx) : Math.max(0, mx);
+      view.style.transition = 'none'; view.style.transform = 'translateX(' + dx + 'px)';
+    }, { passive: true });
+    app.addEventListener('touchend', function () {
+      if (!active) return;
+      active = false;
+      if (Math.abs(dx) < 80) { reset(); return; }
+      var v = view, go = BACK[current];
+      v.style.transition = 'transform .15s ease'; v.style.transform = 'translateX(' + (dx < 0 ? '-' : '') + '100%)';
+      setTimeout(function () { v.style.transition = 'none'; v.style.transform = ''; if (go) go(); }, 150);
+    });
+    app.addEventListener('touchcancel', reset);
+  })();
+
+  /* ---------- theme: device / light / dark ---------- */
+  var THEME_KEY = 'bls.theme';
+  document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) { m.setAttribute('data-default', m.getAttribute('content')); });
+  function applyTheme() {
+    var t = store(THEME_KEY) || 'system', root = document.documentElement;
+    if (t === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+    var bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+      m.setAttribute('content', t === 'system' ? m.getAttribute('data-default') : bg);
+    });
   }
+  applyTheme();
+
+  /* ---------- install / standalone ---------- */
+  function isStandalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function installHint() {
+    if (isStandalone() || !isIOS || store('bls.hideInstall') === '1') return '';
+    return '<div class="install"><div><b>להתקנה באייפון:</b> בכפתור השיתוף של Safari בוחרים "הוספה למסך הבית". ' +
+      'כך האפליקציה נפתחת במסך מלא, עובדת בלי רשת ויכולה לשלוח התראות.</div>' +
+      '<button class="icon-btn" type="button" id="hide-install" aria-label="סגירה"><svg><use href="#i-x"/></svg></button></div>';
+  }
+
+  /* ---------- settings (on the information screen) ---------- */
+  function notifHTML() {
+    if (isIOS && !isStandalone()) return '<p>באייפון התראות פועלות רק אחרי הוספה למסך הבית (iOS 16.4 ואילך): שיתוף ← "הוספה למסך הבית", ואז פותחים מהאייקון.</p>';
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return '<p>המכשיר או הדפדפן לא תומכים בהתראות.</p>';
+    if (Notification.permission === 'granted') return '<p>ההתראות פעילות: כשסיכום שחיכה לחיבור מסודר בעזרת AI, תופיע התראה. על אייקון האפליקציה מוצג מספר האירועים שעדיין לא סוכמו.</p>';
+    if (Notification.permission === 'denied') return '<p>ההתראות חסומות. אפשר להפעיל אותן בהגדרות המכשיר ← התראות ← BLS.</p>';
+    return '<p>התראה כשסיכום שחיכה לחיבור מוכן.</p><button class="btn sm primary" type="button" id="notif-on">הפעלת התראות</button>';
+  }
+  function settingsHTML() {
+    var t = store(THEME_KEY) || 'system';
+    var seg = function (v, l) { return '<button class="chip" type="button" data-theme-set="' + v + '" aria-pressed="' + (t === v) + '">' + l + '</button>'; };
+    return '<section class="panel"><h2>מראה</h2><div class="seg">' + seg('system', 'לפי המכשיר') + seg('light', 'בהיר') + seg('dark', 'כהה') + '</div></section>' +
+      '<section class="panel"><h2>התראות</h2>' + notifHTML() + '</section>';
+  }
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-theme-set]');
+    if (b) { store(THEME_KEY, b.getAttribute('data-theme-set')); applyTheme(); renderAbout(); return; }
+    if (ev.target.closest('#notif-on')) { Notification.requestPermission().then(function () { renderAbout(); updateBadge(); }); return; }
+    if (ev.target.closest('#hide-install')) { store('bls.hideInstall', '1'); renderEvents(); }
+  });
+
+  /* ---------- app icon badge: events with notes that were not summarised yet ---------- */
+  function updateBadge() {
+    try {
+      if (!navigator.setAppBadge) return;
+      var n = loadEvents().filter(function (e) { return e.notes.length && !e.report; }).length;
+      if (n) navigator.setAppBadge(n).catch(function () {}); else navigator.clearAppBadge().catch(function () {});
+    } catch (err) { /* not supported */ }
+  }
+
+  /* ---------- new versions: the server publishes version.json with the build id ---------- */
+  var BUILD = document.documentElement.dataset.build;
+  function isEditing() {
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+    if (!$('modal').hidden || ai.busy || editingNote) return true;
+    for (var k in drafts) if (drafts[k]) return true;
+    return false;
+  }
+  function checkVersion() {
+    if (!navigator.onLine) return;
+    fetch('/version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v || !v.build) return;
+        if (v.build === BUILD) { $('toast').hidden = true; return; }
+        if (swReg) swReg.update().catch(function () {});
+        if (!isEditing()) location.reload(); // nothing in progress: take the new version now
+        else $('toast').hidden = false;      // otherwise offer it
+      }).catch(function () {});
+  }
+
+  /* ---------- offline queue: AI summaries wait for the connection ---------- */
+  var Q_KEY = 'bls.queue', syncing = false;
+  function loadQ() { try { return JSON.parse(localStorage.getItem(Q_KEY) || '[]'); } catch (err) { return []; } }
+  function saveQ(q) { try { localStorage.setItem(Q_KEY, JSON.stringify(q)); } catch (err) { /* ignore */ } }
+  function inQueue(id) { return loadQ().some(function (x) { return x.eventId === id; }); }
+  function queueAI(e) {
+    var q = loadQ();
+    if (!q.some(function (x) { return x.eventId === e.id; })) { q.push({ id: uid('q'), type: 'ai', eventId: e.id, t: Date.now() }); saveQ(q); }
+  }
+  function unqueueAI(id) { saveQ(loadQ().filter(function (x) { return x.eventId !== id; })); }
+  function refreshIfShowing(id) {
+    if (current === 'v-report' && currentEventId() === id && !ai.busy) renderReport(id);
+    else if (current === 'v-events') renderEvents();
+  }
+  function notifyDone(e) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
+      var cs = e.report && CASE_BY_ID[e.report.caseId];
+      navigator.serviceWorker.ready.then(function (reg) {
+        reg.showNotification('הסיכום מוכן', {
+          body: (cs ? cs.title + ' · ' : '') + 'סודר בעזרת AI. יש לבדוק לפני שימוש.',
+          tag: 'summary-' + e.id, icon: 'icons/icon-192.png', lang: 'he', dir: 'rtl',
+          data: { hash: '#/event/' + e.id + '/report' }
+        });
+      });
+    } catch (err) { /* ignore */ }
+  }
+  function processQueue() {
+    if (syncing || !navigator.onLine) return;
+    var q = loadQ(); if (!q.length) return;
+    var e = getEvent(q[0].eventId);
+    if (!e || !e.notes.length || e.reportEdited) { unqueueAI(q[0].eventId); return processQueue(); }
+    if (current === 'v-report' && currentEventId() === e.id) { unqueueAI(e.id); runAI(e); return; } // on screen: the normal flow with progress
+    syncing = true; refreshIfShowing(e.id);
+    requestAI(e)
+      .then(function (j) { applyAI(e, j.draft || {}, j.model); unqueueAI(e.id); notifyDone(e); syncing = false; refreshIfShowing(e.id); setTimeout(processQueue, 300); })
+      .catch(function (err) {
+        syncing = false;
+        if (!(err instanceof TypeError) && navigator.onLine) unqueueAI(e.id); // a real error: do not retry forever (network errors stay queued)
+        refreshIfShowing(e.id);
+      });
+  }
+
+  function refreshCurrent() {
+    if (isEditing() || ai.busy) return;
+    if (current === 'v-events') renderEvents();
+    else if (current === 'v-report') renderReport(currentEventId());
+  }
+  function startFrame() {
+    updateBadge();
+    window.addEventListener('online', function () { updateNet(); checkVersion(); processQueue(); refreshCurrent(); });
+    window.addEventListener('offline', function () { updateNet(); refreshCurrent(); });
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      updateNet(); checkVersion(); processQueue(); refreshCurrent();
+    });
+    setTimeout(function () { checkVersion(); processQueue(); }, 1200);
+  }
+
+
+  /* ---------- routing ---------- */
+  function measureSticky() { /* headers sit outside the scrolling pane: nothing to offset */ }
   function show(v) {
     ['v-list', 'v-card', 'v-about', 'v-events', 'v-event', 'v-report'].forEach(function (k) { $(k).hidden = k !== v; });
     var tab = /^v-(events|event|report)$/.test(v) ? 'events' : 'cards';
     setAwake(v === 'v-event' || v === 'v-report');
     document.querySelectorAll('#tabs a').forEach(function (a) { if (a.getAttribute('data-tab') === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   }
-  var current = 'v-list';
+  var current = 'v-list', currentKey = null, scrollPos = {};
   function route() {
     var h = location.hash || '#/', m;
     if (typeof stopReading === 'function') stopReading();
-    if (current === 'v-list') state.listScroll = window.scrollY;
+    if (currentKey) scrollPos[currentKey] = paneOf(current).scrollTop; // remember where we were on the screen we leave
     if ((m = h.match(/^#\/card\/(.+)$/))) {
       show('v-card'); current = 'v-card';
       renderCard(decodeURIComponent(m[1]));
-      $('card-bar').classList.remove('scrolled');
-      window.scrollTo(0, 0); measureSticky();
     } else if ((m = h.match(/^#\/event\/([^/]+)\/report$/))) {
-      show('v-report'); current = 'v-report'; previewOpen = false; ai.msg = null; renderReport(decodeURIComponent(m[1])); window.scrollTo(0, 0);
+      show('v-report'); current = 'v-report'; previewOpen = false; ai.msg = null; renderReport(decodeURIComponent(m[1]));
     } else if ((m = h.match(/^#\/event\/([^/]+)$/))) {
       if (current !== 'v-event') editingNote = null;
-      show('v-event'); current = 'v-event'; renderEvent(decodeURIComponent(m[1])); window.scrollTo(0, 0);
+      show('v-event'); current = 'v-event'; renderEvent(decodeURIComponent(m[1]));
     } else if (h.indexOf('#/about') === 0) {
-      show('v-about'); current = 'v-about'; renderAbout(); window.scrollTo(0, 0);
+      show('v-about'); current = 'v-about'; renderAbout();
     } else if (h.indexOf('#/cards') !== 0) { // home: event documentation
-      show('v-events'); current = 'v-events'; renderEvents(); window.scrollTo(0, 0);
+      document.title = 'תיעוד אירוע · BLS';
+      show('v-events'); current = 'v-events'; renderEvents();
     } else {
       document.title = 'כרטיסיות BLS';
-      var from = current;
       show('v-list'); current = 'v-list';
-      if (from !== 'v-list') window.scrollTo(0, state.listScroll);
     }
+    currentKey = h;
+    var pane = paneOf(current), y = scrollPos[h] || 0;
+    pane.scrollTop = y;
+    requestAnimationFrame(function () { pane.scrollTop = y; }); // again after layout settles
+    if (current === 'v-card') $('card-bar').classList.toggle('scrolled', y > 70);
   }
   function goBack() { if (state.inApp && history.length > 1) history.back(); else location.hash = '#/cards'; }
   $('back').addEventListener('click', goBack);
   $('back2').addEventListener('click', goBack);
   window.addEventListener('hashchange', function () { state.inApp = true; route(); });
-  window.addEventListener('scroll', function () {
-    if (current === 'v-card') $('card-bar').classList.toggle('scrolled', window.scrollY > 70);
-  }, { passive: true });
-  window.addEventListener('resize', measureSticky);
+  paneOf('v-card').addEventListener('scroll', function () { $('card-bar').classList.toggle('scrolled', this.scrollTop > 70); }, { passive: true });
 
   applyFs();
   renderCats();
@@ -1461,6 +1689,7 @@ pre.preview{white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--s
   renderList();
   route();
   updateNet();
+  startFrame();
 })();
 </script>
 </body>
