@@ -75,8 +75,13 @@ async function accessOk(request, env) {
 const accessMode = (env) => (env.APP_ACCESS_CODE ? 'code' : 'access');
 
 async function callGemini(env, model, payload) {
+  const key = String(env.GEMINI_API_KEY || '').trim(); // a pasted key may carry a stray space or newline
   const url = `${env.GEMINI_BASE || 'https://generativelanguage.googleapis.com'}/v1beta/models/${model}:generateContent`;
-  return fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(payload) });
+  const body = JSON.stringify(payload);
+  const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': key }, body });
+  if (r.status !== 401) return r;
+  // some keys are only accepted as a query parameter; try that once before giving up
+  return fetch(`${url}?key=${encodeURIComponent(key)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body });
 }
 
 export async function onRequestPost({ request, env }) {
